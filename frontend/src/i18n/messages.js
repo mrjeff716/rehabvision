@@ -14,6 +14,8 @@
 // translate every string. Missing strings fall back to English.
 // =============================================================================
 
+import { PATIENT_TEXT } from "./patientText";
+
 export const LANGUAGES = {
   ar: {
     name: "العربية",
@@ -39,7 +41,6 @@ export const LANGUAGES = {
       moveIntoView: "تحرّك ليبيّن كل الطرف بالكاميرا",
       pastSafe: "تجاوزت الحد الآمن!",
       targetReached: "برافو، خلّصت كل التكرارات! فيك تنهي الجلسة.",
-      cameraBlocked: "الكاميرا مسكّرة: ",
       modelError: "ما قدرنا نحمّل النموذج: ",
       saved: (good, total) => `انحفظت الجلسة: ${good}/${total} تكرارات صحيحة`,
     },
@@ -80,7 +81,6 @@ export const LANGUAGES = {
       moveIntoView: "Տեղաւորուէ այնպէս, որ ամբողջ անդամը երեւի",
       pastSafe: "Ապահով սահմանէդ անդին անցար։",
       targetReached: "Կեցցե՛ս, բոլոր կրկնութիւնները աւարտեցան։ Կրնաս նիստը աւարտել։",
-      cameraBlocked: "Քամերան արգելափակուած է – ",
       modelError: "Մոտելը չկրցանք բեռնել – ",
       saved: (good, total) => `Նիստը պահուեցաւ – ${good}/${total} ճիշդ կրկնութիւն`,
     },
@@ -118,7 +118,6 @@ export const LANGUAGES = {
       moveIntoView: "Move so the whole limb is in view",
       pastSafe: "Past your safe range!",
       targetReached: "Well done, all reps finished! You can finish the session.",
-      cameraBlocked: "Camera blocked: ",
       modelError: "Could not load the pose model: ",
       saved: (good, total) => `Session saved: ${good}/${total} good reps`,
     },
@@ -156,7 +155,6 @@ export const LANGUAGES = {
       moveIntoView: "Placez-vous pour que tout le membre soit visible",
       pastSafe: "Vous dépassez votre zone de sécurité !",
       targetReached: "Bravo, toutes les répétitions sont faites ! Vous pouvez terminer la séance.",
-      cameraBlocked: "Caméra bloquée : ",
       modelError: "Impossible de charger le modèle : ",
       saved: (good, total) => `Séance enregistrée : ${good}/${total} bonnes répétitions`,
     },
@@ -194,7 +192,6 @@ export const LANGUAGES = {
       moveIntoView: "Colócate para que se vea toda la extremidad",
       pastSafe: "¡Has pasado tu rango seguro!",
       targetReached: "¡Muy bien, repeticiones completadas! Puedes terminar la sesión.",
-      cameraBlocked: "Cámara bloqueada: ",
       modelError: "No se pudo cargar el modelo: ",
       saved: (good, total) => `Sesión guardada: ${good}/${total} repeticiones buenas`,
     },
@@ -232,7 +229,6 @@ export const LANGUAGES = {
       moveIntoView: "Stell dich so hin, dass die ganze Gliedmaße sichtbar ist",
       pastSafe: "Du bist über deinem sicheren Bereich!",
       targetReached: "Gut gemacht, alle Wiederholungen geschafft! Du kannst die Sitzung beenden.",
-      cameraBlocked: "Kamera blockiert: ",
       modelError: "Das Modell konnte nicht geladen werden: ",
       saved: (good, total) => `Sitzung gespeichert: ${good}/${total} gute Wiederholungen`,
     },
@@ -270,7 +266,6 @@ export const LANGUAGES = {
       moveIntoView: "Posizionati in modo che tutto l'arto sia visibile",
       pastSafe: "Hai superato il tuo limite di sicurezza!",
       targetReached: "Bravo, ripetizioni completate! Puoi terminare la sessione.",
-      cameraBlocked: "Fotocamera bloccata: ",
       modelError: "Impossibile caricare il modello: ",
       saved: (good, total) => `Sessione salvata: ${good}/${total} ripetizioni corrette`,
     },
@@ -308,7 +303,6 @@ export const LANGUAGES = {
       moveIntoView: "Tüm uzvun görünecek şekilde konumlan",
       pastSafe: "Güvenli aralığını aştın!",
       targetReached: "Aferin, tüm tekrarlar bitti! Seansı bitirebilirsin.",
-      cameraBlocked: "Kamera engellendi: ",
       modelError: "Model yüklenemedi: ",
       saved: (good, total) => `Seans kaydedildi: ${good}/${total} doğru tekrar`,
     },
@@ -327,15 +321,21 @@ export const DEFAULT_LANG = "ar";
 
 // Returns the text for a language. Any string missing in that language
 // falls back to English, so the app never shows a blank.
+// howTo/safetyNote stay empty when untranslated: callers fall back to the catalog.
 export function getStrings(lang) {
-  const chosen = LANGUAGES[lang] ?? LANGUAGES[DEFAULT_LANG];
+  const code = LANGUAGES[lang] ? lang : DEFAULT_LANG;
+  const chosen = LANGUAGES[code];
   const en = LANGUAGES.en;
+  const page = PATIENT_TEXT[code] ?? {};
   return {
     ...en,
     ...chosen,
+    lang: code,
     speech: { ...en.speech, ...chosen.speech },
-    ui: { ...en.ui, ...chosen.ui },
+    ui: { ...en.ui, ...PATIENT_TEXT.en.ui, ...chosen.ui, ...page.ui },
     exercises: { ...en.exercises, ...chosen.exercises },
+    howTo: page.howTo ?? {},
+    safetyNote: page.safetyNote,
   };
 }
 

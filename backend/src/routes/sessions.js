@@ -37,6 +37,8 @@ router.post('/', async (req, res, next) => {
     if (!Array.isArray(reps) || reps.length > MAX_REPS_PER_SESSION) {
       return res.status(400).json({ error: 'Invalid reps' })
     }
+    // An empty session would show the physio a session that never happened
+    if (reps.length === 0) return res.status(400).json({ error: 'A session needs at least one rep' })
     for (const r of reps) {
       if (!r || !isAngle(r.peakAngle) || typeof r.reachedTarget !== 'boolean' ||
           typeof r.t !== 'number' || !Number.isFinite(r.t)) {

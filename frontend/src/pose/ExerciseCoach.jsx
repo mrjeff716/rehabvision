@@ -64,6 +64,8 @@ export default function ExerciseCoach({ assignment, lang = DEFAULT_LANG, onFinis
   const [angle, setAngle] = useState(null);
   const [reps, setReps] = useState(0);
   const [warning, setWarning] = useState("");
+  const [cameraError, setCameraError] = useState(null); // null | "blocked" | "failed"
+  const [cameraTry, setCameraTry] = useState(0);        // bump to ask for the camera again
 
   // Values kept between frames without re-rendering
   const repLogRef = useRef([]);     // details of every finished rep
@@ -76,22 +78,33 @@ export default function ExerciseCoach({ assignment, lang = DEFAULT_LANG, onFinis
   useEffect(() => {
     let stream;
     let cancelled = false;
-    navigator.mediaDevices
+    // Wrapped in a promise so a missing navigator.mediaDevices (plain http on a
+    // phone) lands in .catch instead of crashing the page
+    Promise.resolve()
       // Ask permission for the front ("user") camera, no microphone
-      .getUserMedia({ video: { facingMode: "user", width: 640, height: 480 }, audio: false })
+      .then(() => navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 640, height: 480 }, audio: false }))
       .then((s) => {
         if (cancelled) { s.getTracks().forEach((tr) => tr.stop()); return; }
         stream = s;
         videoRef.current.srcObject = s; // show the camera in the <video>
         return videoRef.current.play();
       })
-      .catch((e) => setWarning(tRef.current.ui.cameraBlocked + e.message));
+      .catch((e) => {
+        if (cancelled) return;
+        const denied = e?.name === "NotAllowedError" || e?.name === "SecurityError";
+        setCameraError(denied ? "blocked" : "failed");
+      });
     // Cleanup: turn the camera off when leaving this screen
     return () => {
       cancelled = true;
       stream?.getTracks().forEach((tr) => tr.stop());
     };
-  }, []);
+  }, [cameraTry]);
+
+  const retryCamera = () => {
+    setCameraError(null);
+    setCameraTry((n) => n + 1);
+  };
 
   // 2. Detection loop (starts once the pose model is ready)
   useEffect(() => {
@@ -197,8 +210,16 @@ export default function ExerciseCoach({ assignment, lang = DEFAULT_LANG, onFinis
     });
   }
 
-  if (!points) return <p className="alert-error">Unknown exercise: {assignment.exerciseId}</p>;
-  if (error) return <p dir={t.dir} className="alert-error">{t.ui.modelError}{String(error)}</p>;
+  // Errors still offer a way back, so the patient is never stuck on this screen
+  const backButton = <button className="btn-secondary btn-lg self-start" onClick={() => onCancel?.()}>{t.ui.back}</button>;
+  if (!points || error) {
+    return (
+      <div dir={t.dir} className="mx-auto flex max-w-[640px] flex-col gap-4">
+        <p className="alert-error">{!points ? `Unknown exercise: ${assignment.exerciseId}` : t.ui.modelError + String(error)}</p>
+        {backButton}
+      </div>
+    );
+  }
 
   return (
     // dir="rtl" makes Arabic text read right-to-left
@@ -222,10 +243,17 @@ export default function ExerciseCoach({ assignment, lang = DEFAULT_LANG, onFinis
       <p className="card px-5 py-4 text-center font-mono text-xl font-semibold tabular-nums text-brand-200 sm:text-2xl">
         {t.ui.angle}: {angle ?? "—"}° · {t.ui.target}: {assignment.targetAngle}° · {t.ui.reps}: {reps}/{assignment.reps}
       </p>
-      {warning && <p role="alert" className="animate-alert-in rounded-2xl border border-rose-400/40 bg-rose-500/15 px-5 py-4 text-center text-xl font-bold text-rose-100 shadow-[0_0_40px_-10px_rgb(244_63_94/0.6)]">{warning}</p>}
+      {cameraError && (
+        <div role="alert" className="alert-error flex-col items-stretch text-base">
+          <p>{cameraError === "blocked" ? t.ui.cameraBlocked : t.ui.cameraFailed}</p>
+          <button className="btn-secondary self-start" onClick={retryCamera}>{t.ui.tryAgain}</button>
+        </div>
+      )}
+      {!cameraError && warning && <p role="alert" className="animate-alert-in rounded-2xl border border-rose-400/40 bg-rose-500/15 px-5 py-4 text-center text-xl font-bold text-rose-100 shadow-[0_0_40px_-10px_rgb(244_63_94/0.6)]">{warning}</p>}
       {reps >= assignment.reps && <p className="animate-alert-in rounded-2xl border border-brand-400/40 bg-brand-400/10 px-5 py-4 text-center text-xl font-bold text-brand-100 shadow-glow-lg">{t.ui.targetReached}</p>}
       <div className="flex gap-3">
-        <button className="btn-primary btn-lg flex-1" onClick={finish}>{t.ui.finish}</button>
+        {/* nothing to save until at least one rep was measured */}
+        <button className="btn-primary btn-lg flex-1" onClick={finish} disabled={reps === 0}>{t.ui.finish}</button>
         <button className="btn-secondary btn-lg" onClick={() => onCancel?.()}>{t.ui.back}</button>
       </div>
     </div>

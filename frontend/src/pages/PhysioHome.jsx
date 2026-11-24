@@ -200,6 +200,33 @@ function defaultsFor(catalog, exerciseId) {
 // Form fields are strings while editing; '' must not silently become 0
 const toNumber = (v) => (String(v).trim() === '' ? NaN : Number(v))
 
+// Same rules as backend/src/routes/physio.js (keep MIN_RANGE_DEG in sync),
+// checked here so the exact field is flagged before saving.
+const MIN_RANGE_DEG = 10
+const ANGLES = ['startAngle', 'targetAngle', 'permittedMin', 'permittedMax']
+function rowErrors(r) {
+  const err = {}
+  const n = Object.fromEntries(ANGLES.map((f) => [f, toNumber(r[f])]))
+  for (const f of ANGLES) {
+    if (!Number.isFinite(n[f]) || n[f] < 0 || n[f] > 180) err[f] = 'Enter 0–180'
+  }
+  if (!err.permittedMin && !err.permittedMax && n.permittedMin >= n.permittedMax) {
+    err.permittedMax = 'Must be above safe min'
+  }
+  const rangeOk = !err.permittedMin && !err.permittedMax
+  for (const f of ['startAngle', 'targetAngle']) {
+    if (!err[f] && rangeOk && (n[f] < n.permittedMin || n[f] > n.permittedMax)) err[f] = 'Outside safe range'
+  }
+  if (!err.startAngle && !err.targetAngle && Math.abs(n.targetAngle - n.startAngle) < MIN_RANGE_DEG) {
+    err.targetAngle = `At least ${MIN_RANGE_DEG}° from start`
+  }
+  const reps = toNumber(r.reps)
+  if (!Number.isInteger(reps) || reps < 1 || reps > 100) err.reps = 'Enter 1–100'
+  if (!r.stopCriteria.trim()) err.stopCriteria = 'Write when the patient should stop'
+  if (!r.clinicalClearance) err.clinicalClearance = 'Confirm clearance to assign this exercise'
+  return err
+}
+
 // Edit a patient's exercise list (max 3). The server checks every value again.
 function AssignmentEditor({ patient, catalog, onSaved, onError }) {
   const [rows, setRows] = useState(() =>
@@ -217,6 +244,9 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
   )
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [tried, setTried] = useState(false) // "fill this in" errors wait for the first Save
+  const errors = rows.map(rowErrors)
+  const shown = errors.map((e) => (tried ? e : Object.fromEntries(Object.entries(e).filter(([f]) => ANGLES.includes(f) || f === 'reps'))))
 
   const updateRow = (i, changes) => setRows(rows.map((r, j) => (j === i ? { ...r, ...changes } : r)))
 
@@ -227,6 +257,11 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
 
   const save = async () => {
     setError('')
+    setTried(true)
+    if (errors.some((e) => Object.keys(e).length)) {
+      setError('Fix the highlighted fields before saving.')
+      return
+    }
     setBusy(true)
     try {
       const exercises = rows.map((r) => ({
@@ -251,11 +286,21 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
     }
   }
 
-  const numberField = (i, field, label) => (
+  // Error text sits under the field and is announced with it (aria-describedby)
+  const fieldError = (i, field) => shown[i][field] && (
+    <span id={`err-${i}-${field}`} className="field-error">{shown[i][field]}</span>
+  )
+  const invalidProps = (i, field) => ({
+    'aria-invalid': Boolean(shown[i][field]),
+    'aria-describedby': shown[i][field] ? `err-${i}-${field}` : undefined,
+  })
+
+  const numberField = (i, field, label, { min = 0, max = 180, width = 'w-24' } = {}) => (
     <label className="field-label">
       {label}
-      <input className="field-sm w-24" type="number" min="0" max="180"
+      <input className={`field-sm ${width}`} type="number" min={min} max={max} {...invalidProps(i, field)}
         value={rows[i][field]} onChange={(e) => updateRow(i, { [field]: e.target.value })} />
+      {fieldError(i, field)}
     </label>
   )
 
@@ -286,25 +331,23 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
             {numberField(i, 'targetAngle', 'Target °')}
             {numberField(i, 'permittedMin', 'Safe min °')}
             {numberField(i, 'permittedMax', 'Safe max °')}
-            <label className="field-label">
-              Reps
-              <input className="field-sm w-20" type="number" min="1" max="100"
-                value={r.reps} onChange={(e) => updateRow(i, { reps: e.target.value })} />
-            </label>
+            {numberField(i, 'reps', 'Reps', { min: 1, max: 100, width: 'w-20' })}
             <button className="btn-danger ms-auto"
               onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove</button>
           </div>
           <label className="field-label">
             Stop if (pain / symptoms)
             <input className="field-sm normal-case tracking-normal" maxLength={500} value={r.stopCriteria}
-              placeholder="e.g. sharp pain, swelling, pain above 5/10"
+              placeholder="e.g. sharp pain, swelling, pain above 5/10" {...invalidProps(i, 'stopCriteria')}
               onChange={(e) => updateRow(i, { stopCriteria: e.target.value })} />
+            {fieldError(i, 'stopCriteria')}
           </label>
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg bg-amber-400/10 px-3 py-2.5 text-sm font-medium text-amber-100">
-            <input type="checkbox" checked={r.clinicalClearance}
+          <label className={`flex cursor-pointer items-start gap-2.5 rounded-lg bg-amber-400/10 px-3 py-2.5 text-sm font-medium text-amber-100 ${shown[i].clinicalClearance ? 'ring-2 ring-rose-400/60' : ''}`}>
+            <input type="checkbox" checked={r.clinicalClearance} {...invalidProps(i, 'clinicalClearance')}
               onChange={(e) => updateRow(i, { clinicalClearance: e.target.checked })} />
             I confirm this patient is clinically cleared for this exercise and range
           </label>
+          {fieldError(i, 'clinicalClearance')}
         </div>
       ))}
       {error && <p className="alert-error mb-3">{error}</p>}
