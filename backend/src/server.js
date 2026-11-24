@@ -17,6 +17,7 @@ import express from 'express'
 import cors from 'cors'
 
 import connectDB from './config/db.js'
+import { clientOrigins, trustProxySetting } from './config/deploy.js'
 import rateLimiter from './middleware/rateLimiter.js'
 import authRoutes from './routes/auth.js'
 import exercisesRoutes from './routes/exercises.js'
@@ -32,11 +33,13 @@ const PORT = process.env.PORT || 5001
 // Parse JSON request bodies so routes can read req.body
 app.use(express.json({ limit: '200kb' }))
 
-// CORS: only allow the website (Vite dev server by default) to call this API
-// from a browser. Other sites' pages are blocked.
-app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-}))
+// CORS: only allow the website (Vite dev server by default, the Netlify site
+// when hosted; see CLIENT_ORIGIN) to call this API from a browser. Other
+// sites' pages are blocked.
+app.use(cors({ origin: clientOrigins() }))
+
+// Behind Render's proxy: use the visitor's real IP (needed for rate limiting)
+app.set('trust proxy', trustProxySetting())
 
 // Basic protection against too many requests from one IP
 app.use(rateLimiter)

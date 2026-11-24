@@ -14,6 +14,7 @@ import User from '../models/User.js'
 import { requireAuth, signToken } from '../middleware/auth.js'
 import { authLimiter, resetLimiter } from '../middleware/rateLimiter.js'
 import { sendPasswordResetEmail } from '../config/mailer.js'
+import { clientUrl } from '../config/deploy.js'
 
 const router = Router()
 
@@ -134,8 +135,7 @@ router.post('/forgot-password', resetLimiter, async (req, res, next) => {
       user.resetTokenExpires = new Date(Date.now() + RESET_MINUTES * 60 * 1000)
       await user.save()
 
-      const origin = process.env.CLIENT_ORIGIN || 'http://localhost:5173'
-      const link = `${origin}/reset-password?token=${token}`
+      const link = `${clientUrl()}/reset-password?token=${token}`
       sendPasswordResetEmail(user, link, RESET_MINUTES).catch((e) =>
         console.error('Could not send password reset email:', e.message),
       )

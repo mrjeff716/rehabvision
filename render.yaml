@@ -1,0 +1,39 @@
+# Render settings for the backend (backend/). In Render: New -> Blueprint,
+# pick this repo, and Render creates the service from this file. It then asks
+# for the values marked "sync: false" (they're secrets, so not stored here).
+#
+# Or create a Web Service by hand with the same settings:
+#   Root Directory: backend   Build: npm install   Start: npm start
+#   Health Check Path: /api/health
+
+services:
+  - type: web
+    name: rehabvision-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true # Render makes a long random secret
+      - key: MONGO_DB_NAME
+        value: physio-coach
+      # The Netlify site's address, e.g. https://rehabvision.netlify.app
+      # (several allowed, separated by commas; the first is used in emails)
+      - key: CLIENT_ORIGIN
+        sync: false
+      # Email for "Forgot password" (see backend/.env.example)
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false

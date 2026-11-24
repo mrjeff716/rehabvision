@@ -29,8 +29,15 @@ export class ApiError extends Error {
   }
 }
 
+// Where the backend lives.
+//  - Locally: empty, so requests go to "/api/..." on the website itself, and
+//    vite.config.js forwards them to the backend on port 5001.
+//  - Hosted: set VITE_API_URL to the backend's address when building
+//    (e.g. https://rehabvision-api.onrender.com in Netlify's environment
+//    variables). It's built into the website, so it is not a secret.
+const API_BASE = (import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
+
 // api("/auth/login", { method: "POST", body: {...} }) -> parsed JSON
-// "/api/..." is forwarded to the backend by vite.config.js during development.
 export async function api(path, { method = "GET", body } = {}) {
   const headers = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -39,7 +46,7 @@ export async function api(path, { method = "GET", body } = {}) {
 
   let res;
   try {
-    res = await fetch(`/api${path}`, {
+    res = await fetch(`${API_BASE}/api${path}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
