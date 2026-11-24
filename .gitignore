@@ -34,3 +34,6 @@ dist-ssr
 
 # Old starter repo history (kept out of this repo)
 starter-code/
+
+# Vercel CLI link folder
+.vercel

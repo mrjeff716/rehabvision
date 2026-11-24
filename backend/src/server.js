@@ -41,8 +41,29 @@ app.use(cors({ origin: clientOrigins() }))
 // Behind Render's proxy: use the visitor's real IP (needed for rate limiting)
 app.set('trust proxy', trustProxySetting())
 
+// On Vercel, requests arrive through Vercel's proxy. Trust it so req.ip is the
+// visitor's real IP (otherwise everyone would share one rate-limit counter).
+if (process.env.VERCEL) app.set('trust proxy', true)
+
 // Basic protection against too many requests from one IP
 app.use(rateLimiter)
+
+// On Vercel there is no start() step (see the bottom of this file), so connect
+// to the database on the first request instead. The connection is then reused.
+let dbReady = null
+if (process.env.VERCEL) {
+  app.use(async (_req, _res, next) => {
+    try {
+      if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not set in Vercel environment variables')
+      dbReady ??= connectDB()
+      await dbReady
+      next()
+    } catch (err) {
+      dbReady = null // try again on the next request
+      next(err)
+    }
+  })
+}
 
 // --- Routes ------------------------------------------------------------------
 
@@ -91,7 +112,13 @@ async function start() {
   })
 }
 
-start().catch((err) => {
-  console.error('Failed to start server:', err.message)
-  process.exit(1)
-})
+// Locally (npm run dev / npm start) we run our own server. On Vercel, Vercel
+// runs the app itself as a function, using the default export below.
+if (!process.env.VERCEL) {
+  start().catch((err) => {
+    console.error('Failed to start server:', err.message)
+    process.exit(1)
+  })
+}
+
+export default app
