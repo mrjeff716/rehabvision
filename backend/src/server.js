@@ -38,12 +38,9 @@ app.use(express.json({ limit: '200kb' }))
 // sites' pages are blocked.
 app.use(cors({ origin: clientOrigins() }))
 
-// Behind Render's proxy: use the visitor's real IP (needed for rate limiting)
+// Behind a host's proxy (Render, or Vercel): use the visitor's real IP, so
+// each visitor gets their own rate-limit counter. See config/deploy.js.
 app.set('trust proxy', trustProxySetting())
-
-// On Vercel, requests arrive through Vercel's proxy. Trust it so req.ip is the
-// visitor's real IP (otherwise everyone would share one rate-limit counter).
-if (process.env.VERCEL) app.set('trust proxy', true)
 
 // Basic protection against too many requests from one IP
 app.use(rateLimiter)

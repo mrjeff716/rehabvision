@@ -6,7 +6,10 @@
 
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { LoaderCircle } from 'lucide-react'
 import { useAuth } from '../auth/authContext'
+import PasswordField from '../components/PasswordField'
+import SiteFooter from '../components/SiteFooter'
 
 const ResetPasswordPage = () => {
   const { resetPassword } = useAuth()
@@ -33,34 +36,39 @@ const ResetPasswordPage = () => {
     }
   }
 
-  if (!token) {
-    return (
-      <main className="auth-card">
-        <h1 className="mb-4 text-3xl font-semibold">Link not valid</h1>
-        <p className="text-sm text-slate-300">This reset link is missing its code. Open the link from your email again, or request a new one.</p>
-        <p className="mt-6 text-center text-sm text-slate-400"><Link className="link" to="/forgot-password">Request a new link</Link></p>
-      </main>
-    )
-  }
-
   return (
+    <>
     <main className="auth-card">
-      <h1 className="mb-7 text-3xl font-semibold">Choose a new password</h1>
-      <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
-        <input className="field" type="password" placeholder="New password (8+ characters)" autoComplete="new-password" autoFocus
-          value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} maxLength={72} />
-        <p className="field-hint hint-empty">Choose a new password.</p>
-        <p className="field-hint hint-format">Almost there. Your password needs at least 8 characters.</p>
-        <input className="field" type="password" placeholder="Repeat new password" autoComplete="new-password"
-          value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
-        <p className="field-hint hint-empty">Type the new password again.</p>
-        {error && <p className="alert-error">{error}</p>}
-        <button className="btn-primary btn-lg mt-2 w-full" disabled={busy}>
-          {busy ? 'Saving…' : 'Save and log in'}
-        </button>
-      </form>
-      <p className="mt-6 text-center text-sm text-slate-400">Link expired? <Link className="link" to="/forgot-password">Request a new one</Link></p>
+      {!token ? (
+        <>
+          <h1 className="mb-4 text-3xl font-semibold">Link not valid</h1>
+          <p className="text-ink">This reset link is missing its code. Open the link from your email again, or request a new one.</p>
+          <p className="mt-6 text-center text-sm text-muted"><Link className="link" to="/forgot-password">Request a new link</Link></p>
+        </>
+      ) : (
+        <>
+          <h1 className="mb-7 text-3xl font-semibold">Choose a new password</h1>
+          <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
+            <label className="form-label" htmlFor="reset-password">New password (at least 8 characters)</label>
+            <PasswordField id="reset-password" placeholder="Choose a new password" autoComplete="new-password" autoFocus
+              value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} maxLength={72} />
+            <p className="field-hint hint-empty">Choose a new password.</p>
+            <p className="field-hint hint-format">Almost there. Your password needs at least 8 characters.</p>
+            <label className="form-label" htmlFor="reset-confirm">Repeat new password</label>
+            <PasswordField id="reset-confirm" placeholder="Type it again" autoComplete="new-password"
+              value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+            <p className="field-hint hint-empty">Type the new password again.</p>
+            {error && <p role="alert" className="alert-error">{error}</p>}
+            <button className="btn-primary btn-lg mt-2 w-full" disabled={busy}>
+              {busy ? <><LoaderCircle aria-hidden className="animate-spin" /> Saving…</> : 'Save and log in'}
+            </button>
+          </form>
+          <p className="mt-6 text-center text-sm text-muted">Link expired? <Link className="link" to="/forgot-password">Request a new one</Link></p>
+        </>
+      )}
     </main>
+    <SiteFooter />
+    </>
   )
 }
 

@@ -28,9 +28,9 @@ export function clientUrl() {
 
 // Hosts like Render pass every request through their own proxy, so without
 // this the server sees the proxy's address instead of the visitor's, and all
-// visitors would share one rate-limit counter. Render sets RENDER=true on its
-// servers, so this turns on automatically there. TRUST_PROXY overrides it:
-// "false", "true", or a number of proxies to trust.
+// visitors would share one rate-limit counter. Render sets RENDER=true and
+// Vercel sets VERCEL=1 on their servers, so this turns on automatically
+// there. TRUST_PROXY overrides it: "false", "true", or a number of proxies.
 export function trustProxySetting() {
   const v = process.env.TRUST_PROXY?.trim()
   if (v) {
@@ -39,5 +39,5 @@ export function trustProxySetting() {
     if (/^\d+$/.test(v)) return Number(v)
     return v // e.g. "loopback" (see Express "trust proxy" docs)
   }
-  return process.env.RENDER === 'true'
+  return process.env.RENDER === 'true' || Boolean(process.env.VERCEL)
 }
