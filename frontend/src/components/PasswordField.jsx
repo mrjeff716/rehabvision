@@ -7,8 +7,10 @@
 
 import { useRef, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
+import { useLang } from '../i18n/AppLanguage'
 
 const PasswordField = ({ id, ...inputProps }) => {
+  const { t } = useLang()
   const [shown, setShown] = useState(false)
   const [capsLock, setCapsLock] = useState(false)
   const checkCaps = (e) => setCapsLock(e.getModifierState?.('CapsLock') ?? false)
@@ -33,12 +35,12 @@ const PasswordField = ({ id, ...inputProps }) => {
           onInput={(e) => { edited.current = true; if (touched) check(e.target) }}
           {...inputProps} />
         <button type="button" className="pw-toggle" aria-controls={id} aria-pressed={shown}
-          aria-label={shown ? 'Hide password' : 'Show password'} onClick={() => setShown(!shown)}>
+          aria-label={shown ? t.hidePassword : t.showPassword} onClick={() => setShown(!shown)}>
           {/* key makes React remount the icon, so it animates in on every switch */}
           {shown ? <EyeOff key="off" aria-hidden /> : <Eye key="on" aria-hidden />}
         </button>
       </div>
-      {capsLock && <p className="caps-note" role="status">Caps Lock is on.</p>}
+      {capsLock && <p className="caps-note" role="status">{t.capsLock}</p>}
     </div>
   )
 }

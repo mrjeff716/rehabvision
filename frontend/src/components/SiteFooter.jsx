@@ -3,24 +3,26 @@
 // =============================================================================
 
 import { Link } from 'react-router'
-import Field from '../legal/Field'
+import { BUSINESS, mailto } from '../legal/business'
+import { useLang } from '../i18n/AppLanguage'
 
-const SiteFooter = () => (
-  <footer className="site-footer">
-    <nav aria-label="Legal" className="mb-4 flex flex-wrap gap-x-6 gap-y-2">
-      <Link to="/privacy">Privacy policy</Link>
-      <Link to="/terms">Terms of use</Link>
-      <Link to="/cookies">Cookies and storage</Link>
-      <Link to="/accessibility">Accessibility</Link>
-    </nav>
-    <p>
-      RehabVision is operated by <Field name="legalName" label="company name" />,{' '}
-      <Field name="address" label="registered address" />. Registration no.{' '}
-      <Field name="registrationNo" label="registration number" />. Contact:{' '}
-      <Field name="email" label="contact email" />.
-    </p>
-    <p className="mt-2">RehabVision does not replace advice from your physiotherapist or doctor.</p>
-  </footer>
-)
+const SiteFooter = () => {
+  const { t } = useLang()
+  return (
+    <footer className="site-footer">
+      <nav aria-label={t.legalNav} className="mb-4 flex flex-wrap gap-x-6 gap-y-2">
+        <Link to="/privacy">{t.linkPrivacy}</Link>
+        <Link to="/terms">{t.linkTerms}</Link>
+        <Link to="/pricing">{t.linkPricing}</Link>
+        <Link to="/cookies">{t.linkCookies}</Link>
+        <Link to="/accessibility">{t.linkAccessibility}</Link>
+      </nav>
+      <p>
+        {BUSINESS.name}, {t.country}. {t.contact} <bdi dir="ltr">{mailto(BUSINESS.email)}</bdi>
+      </p>
+      <p className="mt-2">{t.footerNote}</p>
+    </footer>
+  )
+}
 
 export default SiteFooter

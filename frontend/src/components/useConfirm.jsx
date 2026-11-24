@@ -9,8 +9,10 @@
 // =============================================================================
 
 import { useEffect, useRef, useState } from 'react'
+import { useLang } from '../i18n/AppLanguage'
 
 export default function useConfirm() {
+  const { t } = useLang()
   const [request, setRequest] = useState(null) // { title, message, confirmLabel, resolve }
   const dialogRef = useRef(null)
 
@@ -33,7 +35,7 @@ export default function useConfirm() {
         <h2 id="confirm-title" className="text-xl font-semibold">{request.title}</h2>
         <p className="mt-2 text-muted">{request.message}</p>
         <div className="mt-6 flex flex-wrap justify-end gap-3">
-          <button className="btn-secondary" autoFocus onClick={() => close(false)}>Cancel</button>
+          <button className="btn-secondary" autoFocus onClick={() => close(false)}>{t.cancel}</button>
           <button className="btn border-danger bg-danger text-white hover:bg-white hover:text-danger"
             onClick={() => close(true)}>{request.confirmLabel}</button>
         </div>
