@@ -53,6 +53,47 @@ export const LANGUAGES = {
     },
   },
 
+  // Western Armenian (ISO 639-3 "hyw"), written in traditional orthography.
+  // Browsers have no Western Armenian voice, so speech uses an Armenian (hy)
+  // voice if the device has one; the words are still Western Armenian.
+  hyw: {
+    name: "Արեւմտահայերէն",
+    speechLang: "hy-AM",
+    dir: "ltr",
+    speech: {
+      tooFar: "Քիչ մը մեղմացուր, սահմանէդ մի՛ անցնիր",       // "ease off a bit, don't go past your limit"
+      notEnough: "Քիչ մըն ալ շարունակէ",                      // "keep going a little more"
+      good: "Շատ լաւ",                                        // "very good"
+      notVisible: "Ետ քաշուէ, պէտք է ամբողջովին տեսնեմ քեզ",  // "step back, I need to see all of you"
+      done: "Կեցցե՛ս, բոլոր կրկնութիւնները աւարտեցիր",        // "well done, you finished all the reps"
+    },
+    ui: {
+      language: "Լեզու",
+      angle: "Անկիւն",
+      target: "Նպատակ",
+      reps: "Կրկնութիւններ",
+      finish: "Աւարտել նիստը",
+      back: "Ետ",
+      left: "Ձախ",
+      right: "Աջ",
+      loading: "Մոտելը կը բեռնուի…",
+      moveIntoView: "Տեղաւորուէ այնպէս, որ ամբողջ անդամը երեւի",
+      pastSafe: "Ապահով սահմանէդ անդին անցար։",
+      targetReached: "Կեցցե՛ս, բոլոր կրկնութիւնները աւարտեցան։ Կրնաս նիստը աւարտել։",
+      cameraBlocked: "Քամերան արգելափակուած է – ",
+      modelError: "Մոտելը չկրցանք բեռնել – ",
+      saved: (good, total) => `Նիստը պահուեցաւ – ${good}/${total} ճիշդ կրկնութիւն`,
+    },
+    exercises: {
+      supine_heel_slide: "Կրունկի սահեցում (ծունկը ծալել՝ պառկած)",
+      seated_knee_extension: "Նստած՝ ծունկը երկարել",
+      standing_shoulder_forward_flexion: "Կանգնած՝ թեւը առջեւ բարձրացնել",
+      seated_elbow_flexion: "Արմուկը ծալել",
+      standing_bicep_curl: "Երկգլխանի մկանի վարժութիւն (արմուկը ծալել ծանրութեամբ)",
+      standing_hip_abduction: "Կանգնած՝ ոտքը կողքի վրայ բարձրացնել",
+    },
+  },
+
   en: {
     name: "English",
     speechLang: "en-US",
