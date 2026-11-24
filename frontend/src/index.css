@@ -62,11 +62,16 @@
     content: "";
     @apply me-2.5 inline-block h-2 w-2 -translate-y-px rotate-[-45deg] border-b-2 border-e-2 border-current transition-transform duration-150;
   }
-  [dir="rtl"] details > summary::before {
-    @apply rotate-[135deg];
-  }
   details[open] > summary::before {
     @apply rotate-45;
+  }
+  /* In RTL the logical border-e is on the left, so the chevron is already mirrored:
+     rotate the other way (closed: points left, open: points down). */
+  [dir="rtl"] details > summary::before {
+    @apply rotate-45;
+  }
+  [dir="rtl"] details[open] > summary::before {
+    @apply rotate-[-45deg];
   }
 }
 
@@ -390,6 +395,9 @@
   }
   .prose-legal a {
     @apply link;
+  }
+  .prose-legal table {
+    @apply mb-6;
   }
   .placeholder {
     @apply bg-caution-tint px-1 font-semibold text-caution;

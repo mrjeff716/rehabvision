@@ -6,17 +6,38 @@
 //   - Lists patients who need attention this week ("flags")
 // =============================================================================
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { Check, Copy, LoaderCircle, Plus, RefreshCw } from 'lucide-react'
 import useConfirm from '../components/useConfirm'
 import { useAuth } from '../auth/authContext'
 import { api } from '../api'
+import { getStrings } from '../i18n/messages'
+import { useLang } from '../i18n/AppLanguage'
 
 const MAX_EXERCISES = 3
 
+// Exercise name in the app language, falling back to the catalog's English name
+const useExerciseName = (catalog) => {
+  const { lang } = useLang()
+  const names = getStrings(lang).exercises
+  return (id) => names[id] ?? catalog?.exercises.find((ex) => ex.id === id)?.name ?? id
+}
+
+// The server's "needs attention" reasons, rebuilt from its numbers so they can
+// be shown in any language. Same rules as GET /physio/flags in the backend.
+const flagReasons = (f, t) => {
+  if (typeof f.sessions !== 'number') return f.reasons ?? [] // older server: its English text
+  const reasons = []
+  if (f.sessions < 3) reasons.push(t.flagFewSessions(f.sessions))
+  if (f.total > 0 && f.quality < 0.5) reasons.push(t.flagLowQuality(Math.round(f.quality * 100)))
+  if (f.sessions > 0 && f.total === 0) reasons.push(t.flagNoReps)
+  return reasons
+}
+
 const PhysioHome = () => {
   const { user, logout } = useAuth()
+  const { t, tr, locale } = useLang()
   const [catalog, setCatalog] = useState(null)
   const [patients, setPatients] = useState(null) // null = still loading
   const [flags, setFlags] = useState(null)
@@ -60,7 +81,7 @@ const PhysioHome = () => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error('Could not copy. Select the ID and copy it by hand.')
+      toast.error(t.copyFailed)
     }
   }
 
@@ -68,35 +89,35 @@ const PhysioHome = () => {
     <div className="stagger flex flex-col gap-8">
       <section className="rule-top pb-2 pt-6 text-ink">
         <p className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
-          Your public ID
-          <code className="text-4xl normal-case tracking-[0.04em] text-ink sm:text-6xl">{user.publicId}</code>
+          {t.yourPublicId}
+          <code dir="ltr" className="self-start text-4xl normal-case tracking-[0.04em] text-ink sm:text-6xl">{user.publicId}</code>
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <button className="btn-secondary" onClick={copyId}>
             {copied ? <Check key="done" aria-hidden className="animate-icon-in text-success" /> : <Copy key="copy" aria-hidden className="animate-icon-in" />}
-            {copied ? 'Copied' : 'Copy ID'}
+            {copied ? t.copied : t.copyId}
           </button>
-          <p className="text-sm text-muted">Give this ID to your patients so they can add you.</p>
+          <p className="text-sm text-muted">{t.giveIdToPatients}</p>
         </div>
-        <p className="sr-only" role="status">{copied ? 'ID copied to clipboard' : ''}</p>
+        <p className="sr-only" role="status">{copied ? t.idCopied : ''}</p>
       </section>
 
-      {error && <p role="alert" className="alert-error">{error}</p>}
+      {error && <p role="alert" className="alert-error">{tr(error)}</p>}
 
       <section>
         <div className="rule-top mb-4 flex items-center justify-between gap-3 pt-1">
-          <h2 className="section-title mb-0 pt-0 after:hidden">My patients</h2>
+          <h2 className="section-title mb-0 pt-0 after:hidden">{t.myPatients}</h2>
           <button className="btn-secondary" onClick={refresh} disabled={refreshing}>
-            <RefreshCw aria-hidden className={refreshing ? 'animate-spin' : ''} /> Refresh list
+            <RefreshCw aria-hidden className={refreshing ? 'animate-spin' : ''} /> {t.refreshList}
           </button>
         </div>
         {patients === null ? (
-          <div className="flex flex-col gap-4" aria-busy="true" aria-label="Loading patients">
+          <div className="flex flex-col gap-4" aria-busy="true" aria-label={t.loadingPatients}>
             <div className="skeleton h-40 border border-rule" />
             <div className="skeleton h-40 border border-rule" />
           </div>
         ) : patients.length === 0 ? (
-          <p className="card border-dashed px-5 py-8 text-center text-sm text-muted">No patients yet. They will appear here after they add your ID.</p>
+          <p className="card border-dashed px-5 py-8 text-center text-sm text-muted">{t.noPatientsYet}</p>
         ) : (
           <ul className="stagger flex flex-col gap-4">
             {patients.map((p) => (
@@ -107,17 +128,17 @@ const PhysioHome = () => {
       </section>
 
       <section>
-        <h2 className="section-title">Needs attention (last 7 days)</h2>
+        <h2 className="section-title">{t.needsAttention}</h2>
         {flags === null ? (
-          <div className="skeleton h-12" aria-busy="true" aria-label="Loading" />
+          <div className="skeleton h-12" aria-busy="true" aria-label={t.loading} />
         ) : flags.length === 0 ? (
-          <p className="text-sm text-muted">No patients flagged.</p>
+          <p className="text-sm text-muted">{t.noFlagged}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {flags.map((f) => (
               <li key={f.patientId} className="animate-alert-in border-s-4 border-caution bg-caution-tint px-4 py-2.5 text-sm text-caution">
-                <b>{f.name}</b>: {f.reasons.join('; ')}
-                {f.lastSeen && ` (last session ${new Date(f.lastSeen).toLocaleDateString()})`}
+                <b>{f.name}</b>: {flagReasons(f, t).join('; ')}
+                {f.lastSeen && ` (${t.lastSession(new Date(f.lastSeen).toLocaleDateString(locale))})`}
               </li>
             ))}
           </ul>
@@ -126,8 +147,8 @@ const PhysioHome = () => {
 
       {catalog && (
         <section className="text-sm leading-relaxed text-muted">
-          <p><b>Safety:</b> {catalog.safety_note}</p>
-          <p className="mt-1"><b>Measurement:</b> {catalog.measurement_note}</p>
+          <p><b>{t.safety}</b> {t.safetyNote}</p>
+          <p className="mt-1"><b>{t.measurement}</b> {t.measurementNote}</p>
         </section>
       )}
     </div>
@@ -136,12 +157,12 @@ const PhysioHome = () => {
 
 // One patient: their current exercises, plus buttons to edit / see sessions / remove
 function PatientCard({ patient, catalog, onChanged, onError }) {
+  const { t, locale } = useLang()
   const [editing, setEditing] = useState(false)
   const [sessions, setSessions] = useState(null) // null = not loaded/hidden
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [confirm, confirmDialog] = useConfirm()
-
-  const nameOf = (id) => catalog?.exercises.find((ex) => ex.id === id)?.name ?? id
+  const nameOf = useExerciseName(catalog)
 
   const toggleSessions = async () => {
     if (sessions) return setSessions(null)
@@ -158,9 +179,9 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
 
   const remove = async () => {
     const ok = await confirm({
-      title: `Remove ${patient.name}?`,
-      message: 'They will be removed from your patients, their exercises will be cleared, and you will no longer see their results.',
-      confirmLabel: 'Remove patient',
+      title: t.removePatientTitle(patient.name),
+      message: t.removePatientMsg,
+      confirmLabel: t.removePatient,
     })
     if (!ok) return
     try {
@@ -175,15 +196,14 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
 
   return (
     <li className="card card-hover p-5 sm:p-6">
-      <div className="text-lg font-bold text-ink">{patient.name} <span className="text-sm font-medium text-muted">({patient.email})</span></div>
+      <div className="text-lg font-bold text-ink">{patient.name} <bdi dir="ltr" className="text-sm font-medium text-muted">({patient.email})</bdi></div>
       {exercises.length === 0 ? (
-        <p className="mt-2 text-sm text-muted">No exercises assigned.</p>
+        <p className="mt-2 text-sm text-muted">{t.noExercisesAssigned}</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-1.5 text-sm text-ink">
           {exercises.map((a) => (
-            <li key={a._id} className="rounded-lg bg-paper px-3 py-2">
-              {nameOf(a.exerciseId)} ({a.side}): {a.reps} reps, {a.startAngle}° → {a.targetAngle}°,
-              safe range {a.permittedMin}°–{a.permittedMax}°
+            <li key={a._id} className="bg-paper px-3 py-2">
+              {t.exerciseLine(nameOf(a.exerciseId), t[a.side], a.reps, a.startAngle, a.targetAngle, a.permittedMin, a.permittedMax)}
             </li>
           ))}
         </ul>
@@ -191,13 +211,13 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
 
       <div className="mt-4 flex flex-wrap gap-2 border-t border-rule pt-4">
         <button className="btn-secondary" onClick={() => setEditing(!editing)} disabled={!catalog} aria-expanded={editing}>
-          {editing ? 'Close editor' : 'Edit exercises'}
+          {editing ? t.closeEditor : t.editExercises}
         </button>
         <button className="btn-secondary" onClick={toggleSessions} aria-expanded={Boolean(sessions)} disabled={loadingSessions}>
           {loadingSessions && <LoaderCircle aria-hidden className="animate-spin" />}
-          {sessions ? 'Hide sessions' : 'Show sessions'}
+          {sessions ? t.hideSessions : t.showSessions}
         </button>
-        <button className="btn-danger ms-auto" onClick={remove}>Remove patient</button>
+        <button className="btn-danger ms-auto" onClick={remove}>{t.removePatient}</button>
       </div>
 
       {editing && catalog && (
@@ -210,17 +230,17 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
       )}
 
       {sessions && (
-        sessions.length === 0 ? <p className="mt-4 animate-fade-up text-sm text-muted">No sessions yet.</p> : (
+        sessions.length === 0 ? <p className="mt-4 animate-fade-up text-sm text-muted">{t.noSessionsYet}</p> : (
           <table className="data-table mt-4 block animate-fade-up overflow-x-auto border border-rule sm:table">
             <thead>
-              <tr><th>Date</th><th>Exercise</th><th>Side</th><th>Good / total reps</th><th>Target</th></tr>
+              <tr><th>{t.thDate}</th><th>{t.thExercise}</th><th>{t.thSide}</th><th>{t.thGoodTotal}</th><th>{t.thTarget}</th></tr>
             </thead>
             <tbody>
               {sessions.map((s) => (
                 <tr key={s._id}>
-                  <td>{new Date(s.performedAt).toLocaleString()}</td>
+                  <td>{new Date(s.performedAt).toLocaleString(locale)}</td>
                   <td>{nameOf(s.exerciseId)}</td>
-                  <td>{s.side}</td>
+                  <td>{t[s.side] ?? s.side}</td>
                   <td>{s.goodReps} / {s.totalReps}</td>
                   <td>{s.plan?.targetAngle}°</td>
                 </tr>
@@ -256,31 +276,33 @@ const toNumber = (v) => (String(v).trim() === '' ? NaN : Number(v))
 // checked here so the exact field is flagged before saving.
 const MIN_RANGE_DEG = 10
 const ANGLES = ['startAngle', 'targetAngle', 'permittedMin', 'permittedMax']
-function rowErrors(r) {
+function rowErrors(r, t) {
   const err = {}
   const n = Object.fromEntries(ANGLES.map((f) => [f, toNumber(r[f])]))
   for (const f of ANGLES) {
-    if (!Number.isFinite(n[f]) || n[f] < 0 || n[f] > 180) err[f] = 'Enter 0–180'
+    if (!Number.isFinite(n[f]) || n[f] < 0 || n[f] > 180) err[f] = t.enter0to180
   }
   if (!err.permittedMin && !err.permittedMax && n.permittedMin >= n.permittedMax) {
-    err.permittedMax = 'Must be above safe min'
+    err.permittedMax = t.aboveSafeMin
   }
   const rangeOk = !err.permittedMin && !err.permittedMax
   for (const f of ['startAngle', 'targetAngle']) {
-    if (!err[f] && rangeOk && (n[f] < n.permittedMin || n[f] > n.permittedMax)) err[f] = 'Outside safe range'
+    if (!err[f] && rangeOk && (n[f] < n.permittedMin || n[f] > n.permittedMax)) err[f] = t.outsideSafeRange
   }
   if (!err.startAngle && !err.targetAngle && Math.abs(n.targetAngle - n.startAngle) < MIN_RANGE_DEG) {
-    err.targetAngle = `At least ${MIN_RANGE_DEG}° from start`
+    err.targetAngle = t.atLeastFromStart(MIN_RANGE_DEG)
   }
   const reps = toNumber(r.reps)
-  if (!Number.isInteger(reps) || reps < 1 || reps > 100) err.reps = 'Enter 1–100'
-  if (!r.stopCriteria.trim()) err.stopCriteria = 'Write when the patient should stop'
-  if (!r.clinicalClearance) err.clinicalClearance = 'Confirm clearance to assign this exercise'
+  if (!Number.isInteger(reps) || reps < 1 || reps > 100) err.reps = t.enter1to100
+  if (!r.stopCriteria.trim()) err.stopCriteria = t.writeWhenStop
+  if (!r.clinicalClearance) err.clinicalClearance = t.confirmClearance
   return err
 }
 
 // Edit a patient's exercise list (max 3). The server checks every value again.
 function AssignmentEditor({ patient, catalog, onSaved, onError }) {
+  const { t, tr } = useLang()
+  const nameOf = useExerciseName(catalog)
   const [rows, setRows] = useState(() =>
     (patient.exercises ?? []).map((a) => ({
       exerciseId: a.exerciseId,
@@ -296,8 +318,10 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
   )
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const tRef = useRef(t)
+  tRef.current = t
   const [tried, setTried] = useState(false) // "fill this in" errors wait for the first Save
-  const errors = rows.map(rowErrors)
+  const errors = rows.map((r) => rowErrors(r, t))
   const shown = errors.map((e) => (tried ? e : Object.fromEntries(Object.entries(e).filter(([f]) => ANGLES.includes(f) || f === 'reps'))))
 
   const updateRow = (i, changes) => setRows(rows.map((r, j) => (j === i ? { ...r, ...changes } : r)))
@@ -311,7 +335,7 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
     setError('')
     setTried(true)
     if (errors.some((e) => Object.keys(e).length)) {
-      setError('Fix the highlighted fields before saving.')
+      setError(t.fixHighlighted)
       return
     }
     setBusy(true)
@@ -328,7 +352,7 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
         clinicalClearance: r.clinicalClearance,
       }))
       await api(`/physio/patients/${patient._id}/exercises`, { method: 'PUT', body: { exercises } })
-      toast.success(`Exercises saved for ${patient.name}`)
+      toast.success(tRef.current.exercisesSaved(patient.name))
       onSaved()
     } catch (e) {
       if (e.status === 401) onError(e)
@@ -347,68 +371,66 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
     'aria-describedby': shown[i][field] ? `err-${i}-${field}` : undefined,
   })
 
-  const numberField = (i, field, label, { min = 0, max = 180, width = 'w-24' } = {}) => (
+  const numberField = (i, field, label, props) => (
     <label className="field-label">
       {label}
-      <input className={`field-sm ${width}`} type="number" min={min} max={max} {...invalidProps(i, field)}
+      <input className="field-sm w-24" type="number" {...props} {...invalidProps(i, field)}
         value={rows[i][field]} onChange={(e) => updateRow(i, { [field]: e.target.value })} />
       {fieldError(i, field)}
     </label>
   )
+  const angle = { min: '0', max: '180' }
 
   return (
     <div className="mt-4 animate-fade-up border-t border-ink bg-paper p-4 sm:p-5">
-      <p className="mb-4 text-xs leading-relaxed text-muted">
-        Angles in degrees, 0° = neutral (e.g. straight knee). Defaults are healthy reference values,
-        not a prescription — set them for this patient. Max {MAX_EXERCISES} exercises.
-      </p>
+      <p className="mb-4 text-xs leading-relaxed text-muted">{t.editorIntro(MAX_EXERCISES)}</p>
       {rows.map((r, i) => (
         <div key={i} className="mb-4 flex animate-fade-up flex-col gap-3 border border-rule bg-white p-4">
           <div className="flex flex-wrap items-end gap-3">
             <label className="field-label">
-              Exercise
+              {t.exercise}
               <select className="field-sm" value={r.exerciseId}
                 onChange={(e) => updateRow(i, defaultsFor(catalog, e.target.value))}>
-                {catalog.exercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
+                {catalog.exercises.map((ex) => <option key={ex.id} value={ex.id}>{nameOf(ex.id)}</option>)}
               </select>
             </label>
             <label className="field-label">
-              Side
+              {t.side}
               <select className="field-sm" value={r.side} onChange={(e) => updateRow(i, { side: e.target.value })}>
-                <option value="left">Left</option>
-                <option value="right">Right</option>
+                <option value="left">{t.left}</option>
+                <option value="right">{t.right}</option>
               </select>
             </label>
-            {numberField(i, 'startAngle', 'Start °')}
-            {numberField(i, 'targetAngle', 'Target °')}
-            {numberField(i, 'permittedMin', 'Safe min °')}
-            {numberField(i, 'permittedMax', 'Safe max °')}
-            {numberField(i, 'reps', 'Reps', { min: 1, max: 100, width: 'w-20' })}
+            {numberField(i, 'startAngle', t.startDeg, angle)}
+            {numberField(i, 'targetAngle', t.targetDeg, angle)}
+            {numberField(i, 'permittedMin', t.safeMinDeg, angle)}
+            {numberField(i, 'permittedMax', t.safeMaxDeg, angle)}
+            {numberField(i, 'reps', t.reps, { min: '1', max: '100' })}
             <button className="btn-danger ms-auto"
-              onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove exercise</button>
+              onClick={() => setRows(rows.filter((_, j) => j !== i))}>{t.removeExercise}</button>
           </div>
           <label className="field-label">
-            Stop if (pain / symptoms)
+            {t.stopIfLabel}
             <input className="field-sm normal-case tracking-normal" maxLength={500} value={r.stopCriteria}
-              placeholder="e.g. sharp pain, swelling, pain above 5/10" {...invalidProps(i, 'stopCriteria')}
+              placeholder={t.stopIfPlaceholder} {...invalidProps(i, 'stopCriteria')}
               onChange={(e) => updateRow(i, { stopCriteria: e.target.value })} />
             {fieldError(i, 'stopCriteria')}
           </label>
-          <label className={`flex cursor-pointer items-start gap-2.5 rounded-lg bg-caution-tint px-3 py-2.5 text-sm font-medium text-caution ${shown[i].clinicalClearance ? 'ring-2 ring-danger' : ''}`}>
+          <label className={`flex cursor-pointer items-start gap-2.5 bg-caution-tint px-3 py-2.5 text-sm font-medium text-caution ${shown[i].clinicalClearance ? 'outline outline-2 outline-danger' : ''}`}>
             <input type="checkbox" checked={r.clinicalClearance} {...invalidProps(i, 'clinicalClearance')}
               onChange={(e) => updateRow(i, { clinicalClearance: e.target.checked })} />
-            I confirm this patient is clinically cleared for this exercise and range
+            {t.clearance}
           </label>
           {fieldError(i, 'clinicalClearance')}
         </div>
       ))}
-      {error && <p role="alert" className="alert-error mb-3">{error}</p>}
+      {error && <p role="alert" className="alert-error mb-3">{tr(error)}</p>}
       <div className="flex gap-2">
         <button className="btn-secondary" onClick={addRow} disabled={rows.length >= MAX_EXERCISES}>
-          <Plus aria-hidden /> Add exercise
+          <Plus aria-hidden /> {t.addExercise}
         </button>
         <button className="btn-primary" onClick={save} disabled={busy}>
-          {busy && <LoaderCircle aria-hidden className="animate-spin" />} Save exercises
+          {busy && <LoaderCircle aria-hidden className="animate-spin" />} {t.saveExercises}
         </button>
       </div>
     </div>

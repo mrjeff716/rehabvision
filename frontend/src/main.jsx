@@ -10,12 +10,15 @@ import App from './App.jsx'
 import { BrowserRouter } from 'react-router'
 import { Toaster } from "react-hot-toast"
 import AuthProvider from './auth/AuthProvider.jsx'
+import { LanguageProvider } from './i18n/AppLanguage.jsx'
 
 createRoot(document.getElementById('root')).render(
   // StrictMode: extra checks during development only (no effect in production)
   <StrictMode>
     {/* BrowserRouter: lets the app show different pages for different URLs */}
     <BrowserRouter>
+      {/* LanguageProvider: the display language (English, French, Arabic) */}
+      <LanguageProvider>
       {/* AuthProvider: makes "who is logged in" available everywhere */}
       <AuthProvider>
         <App />
@@ -38,6 +41,7 @@ createRoot(document.getElementById('root')).render(
           }}
         />
       </AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   </StrictMode>,
 )

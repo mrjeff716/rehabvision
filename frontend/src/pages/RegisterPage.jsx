@@ -12,9 +12,11 @@ import { LoaderCircle } from 'lucide-react'
 import { useAuth } from '../auth/authContext'
 import PasswordField from '../components/PasswordField'
 import SiteFooter from '../components/SiteFooter'
+import { LanguagePicker, useLang } from '../i18n/AppLanguage'
 
 const RegisterPage = () => {
   const { register } = useAuth()
+  const { t, tr } = useLang()
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'patient' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -33,65 +35,68 @@ const RegisterPage = () => {
     }
   }
 
+  // Policy links open in a new tab, so the half-filled form isn't lost
+  const policyLink = (to, label) => (
+    <Link className="link" to={to} target="_blank">{label}<span className="sr-only"> {t.opensNewTab}</span></Link>
+  )
+
   return (
     <>
+      <div className="mx-auto flex max-w-md justify-end px-6 pt-4"><LanguagePicker /></div>
       <main className="auth-card">
-        <h1 className="mb-7 text-3xl font-semibold">Create an account</h1>
+        <h1 className="mb-7 text-3xl font-semibold">{t.titles['/register']}</h1>
         <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
           {/* invalid fields show the styled hints below instead of the browser's popup */}
           <fieldset className="mb-1">
-            <legend className="form-label mb-2">I am a</legend>
+            <legend className="form-label mb-2">{t.iAmA}</legend>
             <div className="segmented">
               <span className="segmented-indicator" aria-hidden />
               <label>
                 <input className="sr-only" type="radio" name="role" value="patient" checked={form.role === 'patient'} onChange={update('role')} />
-                Patient
+                {t.patient}
               </label>
               <label>
                 <input className="sr-only" type="radio" name="role" value="physio" checked={form.role === 'physio'} onChange={update('role')} />
-                Physiotherapist
+                {t.physio}
               </label>
             </div>
           </fieldset>
 
-          <label className="form-label" htmlFor="reg-name">Full name</label>
-          <input id="reg-name" className="field" placeholder="e.g. Maria Haddad" autoComplete="name"
+          <label className="form-label" htmlFor="reg-name">{t.fullName}</label>
+          <input id="reg-name" className="field" placeholder={t.namePlaceholder} autoComplete="name"
             value={form.name} onChange={update('name')} required maxLength={100} />
-          <p className="field-hint hint-empty">Please tell us your full name.</p>
+          <p className="field-hint hint-empty">{t.hintNameEmpty}</p>
 
-          <label className="form-label" htmlFor="reg-email">Email</label>
+          <label className="form-label" htmlFor="reg-email">{t.email}</label>
           <input id="reg-email" className="field" type="email" placeholder="name@example.com" autoComplete="email"
             value={form.email} onChange={update('email')} required />
-          <p className="field-hint hint-empty">We need your email to create your account.</p>
-          <p className="field-hint hint-format">That email looks incomplete. Try something like name@example.com.</p>
+          <p className="field-hint hint-empty">{t.hintRegEmailEmpty}</p>
+          <p className="field-hint hint-format">{t.hintEmailFormat}</p>
 
-          <label className="form-label" htmlFor="reg-password">Password (at least 8 characters)</label>
-          <PasswordField id="reg-password" placeholder="Choose a password"
+          <label className="form-label" htmlFor="reg-password">{t.passwordRule}</label>
+          <PasswordField id="reg-password" placeholder={t.choosePassword}
             autoComplete="new-password" value={form.password} onChange={update('password')}
             required minLength={8} maxLength={72} />
-          <p className="field-hint hint-empty">Choose a password to protect your account.</p>
-          <p className="field-hint hint-format">Almost there. Your password needs at least 8 characters.</p>
+          <p className="field-hint hint-empty">{t.hintRegPasswordEmpty}</p>
+          <p className="field-hint hint-format">{t.hintPasswordShort}</p>
 
           <label className="consent">
             <input type="checkbox" required />
-            <span>I agree to the <Link className="link" to="/terms" target="_blank">Terms of use<span className="sr-only"> (opens in a new tab)</span></Link> and have read the <Link className="link" to="/privacy" target="_blank">Privacy policy<span className="sr-only"> (opens in a new tab)</span></Link>.</span>
+            <span>{t.agreePrefix} {policyLink('/terms', t.linkTerms)} {t.agreeMiddle} {policyLink('/privacy', t.linkPrivacy)}{t.agreeEnd}</span>
           </label>
           {form.role === 'patient' && (
             <label className="consent">
               <input type="checkbox" required />
-              <span>
-                I consent to RehabVision storing my exercise plans and results, which are health data,
-                and sharing them with the physiotherapist I choose to link to. I can withdraw this at any time.
-              </span>
+              <span>{t.consentHealth}</span>
             </label>
           )}
 
-          {error && <p role="alert" className="alert-error">{error}</p>}
+          {error && <p role="alert" className="alert-error">{tr(error)}</p>}
           <button className="btn-primary btn-lg mt-2 w-full" disabled={busy}>
-            {busy ? <><LoaderCircle aria-hidden className="animate-spin" /> Creating…</> : 'Create account'}
+            {busy ? <><LoaderCircle aria-hidden className="animate-spin" /> {t.creating}</> : t.createAccount}
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-muted">Already have an account? <Link className="link" to="/login">Log in</Link></p>
+        <p className="mt-6 text-center text-sm text-muted">{t.haveAccount} <Link className="link" to="/login">{t.logIn}</Link></p>
       </main>
       <SiteFooter />
     </>
