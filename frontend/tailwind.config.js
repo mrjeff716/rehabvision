@@ -5,74 +5,94 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    // Swiss: square corners everywhere (max 2px), so the scale is replaced, not extended
+    borderRadius: {
+      none: '0',
+      DEFAULT: '2px',
+      sm: '2px',
+      md: '2px',
+      lg: '2px',
+      xl: '2px',
+      '2xl': '2px',
+      full: '9999px',
+    },
     extend: {
       fontFamily: {
-        sans: ['Sora', '"IBM Plex Sans Arabic"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        // One family, from the device: no web-font request to a third party (privacy),
+        // nothing to download. Arabic/Armenian fall back to the OS's own fonts.
+        sans: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'system-ui', 'sans-serif'],
+        mono: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // Bio-luminescent medical green
-        brand: {
-          50: '#eafff6',
-          100: '#c9ffe8',
-          200: '#97fbd3',
-          300: '#5cf2bb',
-          400: '#2ee6a6',
-          500: '#12c98c',
-          600: '#09a473',
-          700: '#0a815d',
-          800: '#0d664c',
-          900: '#0d5441',
+        ink: '#111111',     // text, 18.9:1 on white
+        muted: '#555555',   // secondary text, 7.5:1 on white
+        rule: '#E2E2E4',    // 1px lines and borders
+        paper: '#F7F7F8',   // alternate surface
+        // the ONE accent: Yves Klein Blue (10.7:1 on white)
+        accent: {
+          DEFAULT: '#002FA7',
+          hover: '#00237D',
+          tint: '#EEF2FB',
         },
-        // Deep "operating theatre" night tones
-        void: {
-          950: '#020a08',
-          900: '#04110d',
-          800: '#071a15',
-          700: '#0b241d',
-          600: '#123228',
-        },
-        pulse: '#38e1ff', // cyan accent for data / telemetry
+        danger: { DEFAULT: '#B42318', tint: '#FEF3F2' },  // 6.6:1 on tint
+        caution: { DEFAULT: '#7A4D00', tint: '#FFF6E0' }, // 7.4:1 on tint
+        success: { DEFAULT: '#067647', tint: '#ECFDF3' }, // 5.6:1 on tint
       },
-      boxShadow: {
-        card: '0 1px 0 rgb(255 255 255 / 0.04) inset, 0 20px 40px -24px rgb(0 0 0 / 0.8)',
-        glow: '0 0 0 1px rgb(46 230 166 / 0.35), 0 0 24px -2px rgb(46 230 166 / 0.45)',
-        'glow-lg': '0 0 0 1px rgb(46 230 166 / 0.25), 0 0 60px -10px rgb(46 230 166 / 0.55)',
-        lift: '0 1px 0 rgb(255 255 255 / 0.06) inset, 0 30px 60px -30px rgb(0 0 0 / 0.9), 0 0 40px -20px rgb(46 230 166 / 0.35)',
-      },
-      borderRadius: {
-        xl: '0.875rem',
-        '2xl': '1.25rem',
+      transitionTimingFunction: {
+        out: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
       },
       keyframes: {
         'fade-up': {
-          '0%': { opacity: '0', transform: 'translateY(14px) scale(0.985)', filter: 'blur(6px)' },
-          '100%': { opacity: '1', transform: 'none', filter: 'blur(0)' },
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'none' },
         },
         'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
-        'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 0 1px rgb(46 230 166 / 0.35), 0 0 18px -4px rgb(46 230 166 / 0.5)' },
-          '50%': { boxShadow: '0 0 0 1px rgb(46 230 166 / 0.6), 0 0 34px 0 rgb(46 230 166 / 0.7)' },
-        },
-        drift: {
-          '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
-          '50%': { transform: 'translate3d(4%, 3%, 0) scale(1.08)' },
-        },
         'alert-in': {
-          '0%': { opacity: '0', transform: 'scale(0.96)' },
-          '60%': { opacity: '1', transform: 'scale(1.01)' },
-          '100%': { opacity: '1', transform: 'scale(1)' },
+          '0%': { opacity: '0', transform: 'translateX(-6px)' },
+          '100%': { opacity: '1', transform: 'none' },
+        },
+        // a number that just changed (rep counter) pops once
+        tick: {
+          '0%': { transform: 'scale(1.18)', color: '#002FA7' },
+          '100%': { transform: 'none' },
+        },
+        // icon swapping in (eye / copy check)
+        'icon-in': {
+          '0%': { opacity: '0', transform: 'rotate(-90deg) scale(0.6)' },
+          '100%': { opacity: '1', transform: 'none' },
+        },
+        'dialog-in': {
+          '0%': { opacity: '0', transform: 'translateY(12px) scale(0.98)' },
+          '100%': { opacity: '1', transform: 'none' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '100% 0' },
+          '100%': { backgroundPosition: '-100% 0' },
+        },
+        'rule-draw': {
+          '0%': { transform: 'scaleX(0)' },
+          '100%': { transform: 'scaleX(1)' },
+        },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '25%': { transform: 'translateX(-4px)' },
+          '50%': { transform: 'translateX(3px)' },
+          '75%': { transform: 'translateX(-2px)' },
         },
       },
       animation: {
-        'fade-up': 'fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards',
-        'fade-in': 'fade-in 0.6s ease-out backwards',
-        'glow-pulse': 'glow-pulse 3s ease-in-out infinite',
-        drift: 'drift 18s ease-in-out infinite',
-        'alert-in': 'alert-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards',
+        'fade-up': 'fade-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards',
+        'fade-in': 'fade-in 0.25s ease-out backwards',
+        'alert-in': 'alert-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) backwards',
+        tick: 'tick 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        'icon-in': 'icon-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        'dialog-in': 'dialog-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        shimmer: 'shimmer 1.4s linear infinite',
+        'rule-draw': 'rule-draw 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards',
+        shake: 'shake 0.3s ease-out',
       },
     },
   },

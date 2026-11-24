@@ -8,6 +8,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
+import { Check, Copy, LoaderCircle, Plus, RefreshCw } from 'lucide-react'
+import useConfirm from '../components/useConfirm'
 import { useAuth } from '../auth/authContext'
 import { api } from '../api'
 
@@ -16,9 +18,11 @@ const MAX_EXERCISES = 3
 const PhysioHome = () => {
   const { user, logout } = useAuth()
   const [catalog, setCatalog] = useState(null)
-  const [patients, setPatients] = useState([])
-  const [flags, setFlags] = useState([])
+  const [patients, setPatients] = useState(null) // null = still loading
+  const [flags, setFlags] = useState(null)
   const [error, setError] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   // Expired login -> back to the login page; anything else -> show the message
   const handleError = useCallback((e) => (e.status === 401 ? logout() : setError(e.message)), [logout])
@@ -36,29 +40,63 @@ const PhysioHome = () => {
       setFlags(f.flagged)
     } catch (e) {
       handleError(e)
+      // stop showing the loading placeholders
+      setPatients((p) => p ?? [])
+      setFlags((f) => f ?? [])
     }
   }, [handleError])
 
   useEffect(() => { load() }, [load])
 
+  const refresh = async () => {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
+  }
+
+  const copyId = async () => {
+    try {
+      await navigator.clipboard.writeText(user.publicId)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Could not copy. Select the ID and copy it by hand.')
+    }
+  }
+
   return (
     <div className="stagger flex flex-col gap-8">
-      <section className="card overflow-hidden border-brand-400/25 bg-gradient-to-br from-brand-500/20 via-void-800/70 to-pulse/10 p-6 text-slate-300 shadow-lift">
-        <p className="flex flex-wrap items-center gap-3 text-sm font-medium">
-          Your public ID: <code className="animate-glow-pulse rounded-xl bg-void-950/70 px-4 py-2 text-xl font-semibold tracking-[0.25em] text-brand-200">{user.publicId}</code>
+      <section className="rule-top pb-2 pt-6 text-ink">
+        <p className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+          Your public ID
+          <code className="text-4xl normal-case tracking-[0.04em] text-ink sm:text-6xl">{user.publicId}</code>
         </p>
-        <p className="mt-3 text-sm text-slate-400">Give this ID to your patients so they can add you.</p>
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          <button className="btn-secondary" onClick={copyId}>
+            {copied ? <Check key="done" aria-hidden className="animate-icon-in text-success" /> : <Copy key="copy" aria-hidden className="animate-icon-in" />}
+            {copied ? 'Copied' : 'Copy ID'}
+          </button>
+          <p className="text-sm text-muted">Give this ID to your patients so they can add you.</p>
+        </div>
+        <p className="sr-only" role="status">{copied ? 'ID copied to clipboard' : ''}</p>
       </section>
 
-      {error && <p className="alert-error">{error}</p>}
+      {error && <p role="alert" className="alert-error">{error}</p>}
 
       <section>
-        <div className="mb-4 flex items-center justify-between gap-3 px-1">
-          <h2 className="section-title mb-0">My patients</h2>
-          <button className="btn-secondary" onClick={load}>Refresh</button>
+        <div className="rule-top mb-4 flex items-center justify-between gap-3 pt-1">
+          <h2 className="section-title mb-0 pt-0 after:hidden">My patients</h2>
+          <button className="btn-secondary" onClick={refresh} disabled={refreshing}>
+            <RefreshCw aria-hidden className={refreshing ? 'animate-spin' : ''} /> Refresh list
+          </button>
         </div>
-        {patients.length === 0 ? (
-          <p className="card border-dashed px-5 py-8 text-center text-sm text-slate-400 shadow-none">No patients yet. They will appear here after they add your ID.</p>
+        {patients === null ? (
+          <div className="flex flex-col gap-4" aria-busy="true" aria-label="Loading patients">
+            <div className="skeleton h-40 border border-rule" />
+            <div className="skeleton h-40 border border-rule" />
+          </div>
+        ) : patients.length === 0 ? (
+          <p className="card border-dashed px-5 py-8 text-center text-sm text-muted">No patients yet. They will appear here after they add your ID.</p>
         ) : (
           <ul className="stagger flex flex-col gap-4">
             {patients.map((p) => (
@@ -68,14 +106,16 @@ const PhysioHome = () => {
         )}
       </section>
 
-      <section className="card border-amber-400/20 p-5 sm:p-6">
+      <section>
         <h2 className="section-title">Needs attention (last 7 days)</h2>
-        {flags.length === 0 ? (
-          <p className="text-sm text-slate-400">No patients flagged.</p>
+        {flags === null ? (
+          <div className="skeleton h-12" aria-busy="true" aria-label="Loading" />
+        ) : flags.length === 0 ? (
+          <p className="text-sm text-muted">No patients flagged.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {flags.map((f) => (
-              <li key={f.patientId} className="rounded-xl border-s-4 border-amber-300 bg-amber-400/10 px-4 py-2.5 text-sm text-amber-100">
+              <li key={f.patientId} className="animate-alert-in border-s-4 border-caution bg-caution-tint px-4 py-2.5 text-sm text-caution">
                 <b>{f.name}</b>: {f.reasons.join('; ')}
                 {f.lastSeen && ` (last session ${new Date(f.lastSeen).toLocaleDateString()})`}
               </li>
@@ -85,7 +125,7 @@ const PhysioHome = () => {
       </section>
 
       {catalog && (
-        <section className="px-1 text-xs leading-relaxed text-slate-400">
+        <section className="text-sm leading-relaxed text-muted">
           <p><b>Safety:</b> {catalog.safety_note}</p>
           <p className="mt-1"><b>Measurement:</b> {catalog.measurement_note}</p>
         </section>
@@ -98,21 +138,31 @@ const PhysioHome = () => {
 function PatientCard({ patient, catalog, onChanged, onError }) {
   const [editing, setEditing] = useState(false)
   const [sessions, setSessions] = useState(null) // null = not loaded/hidden
+  const [loadingSessions, setLoadingSessions] = useState(false)
+  const [confirm, confirmDialog] = useConfirm()
 
   const nameOf = (id) => catalog?.exercises.find((ex) => ex.id === id)?.name ?? id
 
   const toggleSessions = async () => {
     if (sessions) return setSessions(null)
+    setLoadingSessions(true)
     try {
       const data = await api(`/physio/patients/${patient._id}/sessions`)
       setSessions(data.sessions)
     } catch (e) {
       onError(e)
+    } finally {
+      setLoadingSessions(false)
     }
   }
 
   const remove = async () => {
-    if (!window.confirm(`Remove ${patient.name} from your patients? Their exercises will be cleared.`)) return
+    const ok = await confirm({
+      title: `Remove ${patient.name}?`,
+      message: 'They will be removed from your patients, their exercises will be cleared, and you will no longer see their results.',
+      confirmLabel: 'Remove patient',
+    })
+    if (!ok) return
     try {
       await api(`/physio/patients/${patient._id}`, { method: 'DELETE' })
       onChanged()
@@ -125,13 +175,13 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
 
   return (
     <li className="card card-hover p-5 sm:p-6">
-      <div className="text-lg font-bold text-white">{patient.name} <span className="text-sm font-medium text-slate-400">({patient.email})</span></div>
+      <div className="text-lg font-bold text-ink">{patient.name} <span className="text-sm font-medium text-muted">({patient.email})</span></div>
       {exercises.length === 0 ? (
-        <p className="mt-2 text-sm text-slate-400">No exercises assigned.</p>
+        <p className="mt-2 text-sm text-muted">No exercises assigned.</p>
       ) : (
-        <ul className="mt-3 flex flex-col gap-1.5 text-sm text-slate-200">
+        <ul className="mt-3 flex flex-col gap-1.5 text-sm text-ink">
           {exercises.map((a) => (
-            <li key={a._id} className="rounded-lg bg-white/[0.03] px-3 py-2">
+            <li key={a._id} className="rounded-lg bg-paper px-3 py-2">
               {nameOf(a.exerciseId)} ({a.side}): {a.reps} reps, {a.startAngle}° → {a.targetAngle}°,
               safe range {a.permittedMin}°–{a.permittedMax}°
             </li>
@@ -139,12 +189,13 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
         </ul>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-white/5 pt-4">
-        <button className="btn-secondary" onClick={() => setEditing(!editing)} disabled={!catalog}>
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-rule pt-4">
+        <button className="btn-secondary" onClick={() => setEditing(!editing)} disabled={!catalog} aria-expanded={editing}>
           {editing ? 'Close editor' : 'Edit exercises'}
         </button>
-        <button className="btn-secondary" onClick={toggleSessions}>
-          {sessions ? 'Hide sessions' : 'Sessions'}
+        <button className="btn-secondary" onClick={toggleSessions} aria-expanded={Boolean(sessions)} disabled={loadingSessions}>
+          {loadingSessions && <LoaderCircle aria-hidden className="animate-spin" />}
+          {sessions ? 'Hide sessions' : 'Show sessions'}
         </button>
         <button className="btn-danger ms-auto" onClick={remove}>Remove patient</button>
       </div>
@@ -159,8 +210,8 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
       )}
 
       {sessions && (
-        sessions.length === 0 ? <p className="mt-4 text-sm text-slate-400">No sessions yet.</p> : (
-          <table className="data-table mt-4 block overflow-x-auto rounded-xl border border-white/10 sm:table">
+        sessions.length === 0 ? <p className="mt-4 animate-fade-up text-sm text-muted">No sessions yet.</p> : (
+          <table className="data-table mt-4 block animate-fade-up overflow-x-auto border border-rule sm:table">
             <thead>
               <tr><th>Date</th><th>Exercise</th><th>Side</th><th>Good / total reps</th><th>Target</th></tr>
             </thead>
@@ -178,6 +229,7 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
           </table>
         )
       )}
+      {confirmDialog}
     </li>
   )
 }
@@ -260,13 +312,13 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
   )
 
   return (
-    <div className="mt-4 animate-fade-up rounded-2xl border border-white/10 bg-void-950/40 p-4 sm:p-5">
-      <p className="mb-4 text-xs leading-relaxed text-slate-400">
+    <div className="mt-4 animate-fade-up border-t border-ink bg-paper p-4 sm:p-5">
+      <p className="mb-4 text-xs leading-relaxed text-muted">
         Angles in degrees, 0° = neutral (e.g. straight knee). Defaults are healthy reference values,
         not a prescription — set them for this patient. Max {MAX_EXERCISES} exercises.
       </p>
       {rows.map((r, i) => (
-        <div key={i} className="mb-4 flex flex-col gap-3 rounded-xl border border-white/10 bg-void-800/70 p-4 shadow-card">
+        <div key={i} className="mb-4 flex animate-fade-up flex-col gap-3 border border-rule bg-white p-4">
           <div className="flex flex-wrap items-end gap-3">
             <label className="field-label">
               Exercise
@@ -292,7 +344,7 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
                 value={r.reps} onChange={(e) => updateRow(i, { reps: e.target.value })} />
             </label>
             <button className="btn-danger ms-auto"
-              onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove</button>
+              onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove exercise</button>
           </div>
           <label className="field-label">
             Stop if (pain / symptoms)
@@ -300,20 +352,20 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
               placeholder="e.g. sharp pain, swelling, pain above 5/10"
               onChange={(e) => updateRow(i, { stopCriteria: e.target.value })} />
           </label>
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg bg-amber-400/10 px-3 py-2.5 text-sm font-medium text-amber-100">
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg bg-caution-tint px-3 py-2.5 text-sm font-medium text-caution">
             <input type="checkbox" checked={r.clinicalClearance}
               onChange={(e) => updateRow(i, { clinicalClearance: e.target.checked })} />
             I confirm this patient is clinically cleared for this exercise and range
           </label>
         </div>
       ))}
-      {error && <p className="alert-error mb-3">{error}</p>}
+      {error && <p role="alert" className="alert-error mb-3">{error}</p>}
       <div className="flex gap-2">
         <button className="btn-secondary" onClick={addRow} disabled={rows.length >= MAX_EXERCISES}>
-          Add exercise
+          <Plus aria-hidden /> Add exercise
         </button>
         <button className="btn-primary" onClick={save} disabled={busy}>
-          Save
+          {busy && <LoaderCircle aria-hidden className="animate-spin" />} Save exercises
         </button>
       </div>
     </div>
