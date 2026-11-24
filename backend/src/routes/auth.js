@@ -3,14 +3,17 @@
 //   POST /api/auth/register  { name, email, password, role }  -> { token, user }
 //   POST /api/auth/login     { email, password }              -> { token, user }
 //   GET  /api/auth/me        (logged in)                      -> { user }
+//   POST /api/auth/forgot-password { email }                  -> { message }
+//   POST /api/auth/reset-password  { token, password }        -> { token, user }
 // =============================================================================
 
-import { randomInt } from 'node:crypto'
+import { createHash, randomBytes, randomInt } from 'node:crypto'
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import User from '../models/User.js'
 import { requireAuth, signToken } from '../middleware/auth.js'
-import { authLimiter } from '../middleware/rateLimiter.js'
+import { authLimiter, resetLimiter } from '../middleware/rateLimiter.js'
+import { sendPasswordResetEmail } from '../config/mailer.js'
 
 const router = Router()
 
@@ -103,6 +106,77 @@ router.post('/login', authLimiter, async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid email or password' })
     }
 
+    res.json({ token: signToken(user), user: await publicUser(user) })
+  } catch (e) {
+    next(e)
+  }
+})
+
+// --- Forgot password ---------------------------------------------------------
+
+const RESET_MINUTES = 30
+const hashToken = (token) => createHash('sha256').update(token).digest('hex')
+
+// Always answers the same way, whether or not the email has an account, so
+// this can't be used to find out who is registered. The email is sent in the
+// background so the response time doesn't give it away either.
+router.post('/forgot-password', resetLimiter, async (req, res, next) => {
+  try {
+    const { email } = req.body ?? {}
+    if (typeof email !== 'string' || !EMAIL_RE.test(email.trim()) || email.length > 254) {
+      return res.status(400).json({ error: 'Please enter a valid email address' })
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() })
+    if (user) {
+      const token = randomBytes(32).toString('hex')
+      user.resetTokenHash = hashToken(token)
+      user.resetTokenExpires = new Date(Date.now() + RESET_MINUTES * 60 * 1000)
+      await user.save()
+
+      const origin = process.env.CLIENT_ORIGIN || 'http://localhost:5173'
+      const link = `${origin}/reset-password?token=${token}`
+      sendPasswordResetEmail(user, link, RESET_MINUTES).catch((e) =>
+        console.error('Could not send password reset email:', e.message),
+      )
+    }
+
+    res.json({ message: 'If an account exists for that email, a reset link is on its way.' })
+  } catch (e) {
+    next(e)
+  }
+})
+
+// Uses the normal login limit: the strict one is only needed where emails are
+// sent, and the 64-character reset code can't be guessed anyway.
+router.post('/reset-password', authLimiter, async (req, res, next) => {
+  try {
+    const { token, password } = req.body ?? {}
+    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) {
+      return res.status(400).json({ error: 'This reset link is invalid. Please request a new one.' })
+    }
+    if (typeof password !== 'string' || password.length < 8 || Buffer.byteLength(password) > 72) {
+      return res.status(400).json({ error: 'Password must be 8–72 characters' })
+    }
+
+    const user = await User.findOne({
+      resetTokenHash: hashToken(token),
+      resetTokenExpires: { $gt: new Date() },
+    })
+    if (!user) {
+      return res.status(400).json({ error: 'This reset link is invalid or has expired. Please request a new one.' })
+    }
+
+    // Save the new password and use up the link (it works only once).
+    // Back-date passwordChangedAt by 1s so the token we return below
+    // (issued in this same second) isn't treated as an old one.
+    user.passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS)
+    user.resetTokenHash = null
+    user.resetTokenExpires = null
+    user.passwordChangedAt = new Date(Date.now() - 1000)
+    await user.save()
+
+    // Log them straight in
     res.json({ token: signToken(user), user: await publicUser(user) })
   } catch (e) {
     next(e)

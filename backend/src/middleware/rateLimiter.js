@@ -49,3 +49,10 @@ export const authLimiter = createRateLimiter({
   max: 30,
   message: 'Too many login attempts, please wait a few minutes and try again.',
 })
+
+// Forgot password sends real emails, so keep it low: 5 requests per 15 minutes
+export const resetLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many password reset requests, please wait a few minutes and try again.',
+})

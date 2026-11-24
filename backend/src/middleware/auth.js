@@ -41,6 +41,12 @@ export async function requireAuth(req, res, next) {
     // Load the user fresh from the database, so deleted users are locked out
     const user = await User.findById(payload.sub)
     if (!user) return res.status(401).json({ error: 'Please log in' })
+    // Password was reset after this token was issued: log out old devices.
+    // (iat is in seconds; compare at second precision so the token issued
+    // right after the reset still works.)
+    if (user.passwordChangedAt && payload.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+      return res.status(401).json({ error: 'Your password was changed, please log in again' })
+    }
     req.user = user
     next()
   } catch (e) {

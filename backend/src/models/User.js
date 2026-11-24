@@ -34,6 +34,13 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true }, // never the real password
     role: { type: String, enum: ['patient', 'physio'], required: true },
 
+    // Forgot password: only a SHA-256 hash of the emailed reset token is
+    // stored, so a database leak can't be used to reset anyone's password.
+    resetTokenHash: { type: String, default: null, index: true },
+    resetTokenExpires: { type: Date, default: null },
+    // Set when the password changes; login tokens issued before this stop working
+    passwordChangedAt: { type: Date, default: null },
+
     // Physio only: the ID patients type in to find them. "sparse" lets
     // patients (who have none) share the unique index.
     publicId: { type: String, unique: true, sparse: true },
@@ -56,6 +63,9 @@ const userSchema = new mongoose.Schema(
 userSchema.set('toJSON', {
   transform: (_doc, ret) => {
     delete ret.passwordHash
+    delete ret.resetTokenHash
+    delete ret.resetTokenExpires
+    delete ret.passwordChangedAt
     delete ret.__v
     return ret
   },

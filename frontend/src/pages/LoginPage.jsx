@@ -37,6 +37,7 @@ const LoginPage = () => {
         <input className="field" type="password" placeholder="Password" autoComplete="current-password"
           value={password} onChange={(e) => setPassword(e.target.value)} required />
         <p className="field-hint hint-empty">Enter your password to continue.</p>
+        <Link className="link self-end text-sm" to="/forgot-password">Forgot password?</Link>
         {error && <p className="alert-error">{error}</p>}
         <button className="btn-primary btn-lg mt-2 w-full" disabled={busy}>
           {busy ? 'Logging in…' : 'Log in'}

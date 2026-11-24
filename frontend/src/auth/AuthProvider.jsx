@@ -42,6 +42,14 @@ export default function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  // Forgot password: set a new password with the emailed link's token, and log in
+  const resetPassword = useCallback(async (token, password) => {
+    const data = await api("/auth/reset-password", { method: "POST", body: { token, password } });
+    setToken(data.token);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -55,8 +63,8 @@ export default function AuthProvider({ children }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, refresh, setUser }),
-    [user, loading, login, register, logout, refresh],
+    () => ({ user, loading, login, register, resetPassword, logout, refresh, setUser }),
+    [user, loading, login, register, resetPassword, logout, refresh],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
