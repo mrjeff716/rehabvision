@@ -210,17 +210,26 @@
   [dir="rtl"] .field:user-valid:not(:placeholder-shown) {
     background-position: left 0.9rem center;
   }
-  .field-sm:user-valid {
-    @apply border-white/10;
+  /* Small editor fields never get the green check: "valid on its own" can still
+     break a cross-field rule (e.g. target above safe max). Same specificity as
+     the rule @apply copies in, and later, so it wins. */
+  .field-sm:user-valid:not(:placeholder-shown) {
+    @apply border-white/10 pe-3;
+    background-image: none;
   }
 
-  /* Exercise editor: the field's label turns red and says what's wrong */
-  .field-label:has(:user-invalid) {
+  /* Exercise editor: invalid fields (set by the editor's own checks) */
+  /* :not(:placeholder-shown) matches the specificity of the rule above, so red wins */
+  .field-sm[aria-invalid="true"],
+  .field-sm[aria-invalid="true"]:not(:placeholder-shown) {
+    @apply border-rose-400/70 bg-rose-500/[0.06] ring-2 ring-rose-500/15;
+  }
+  .field-label:has(:user-invalid),
+  .field-label:has([aria-invalid="true"]) {
     @apply text-rose-300;
   }
-  .field-label:has(input[type="number"]:user-invalid)::after {
-    content: "Out of range";
-    @apply -mt-0.5 text-[0.625rem] font-semibold normal-case tracking-normal text-rose-300;
+  .field-error {
+    @apply text-xs font-semibold normal-case leading-snug tracking-normal text-rose-300;
   }
 
   /* Browser autofill: keep the dark field instead of Chrome's yellow/blue fill */
