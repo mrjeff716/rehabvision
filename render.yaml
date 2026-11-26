@@ -22,7 +22,7 @@ services:
         generateValue: true # Render makes a long random secret
       - key: MONGO_DB_NAME
         value: physio-coach
-      # The Netlify site's address, e.g. https://rehabvision.netlify.app
+      # The Vercel site's address, e.g. https://rehabvision.vercel.app
       # (several allowed, separated by commas; the first is used in emails)
       - key: CLIENT_ORIGIN
         sync: false

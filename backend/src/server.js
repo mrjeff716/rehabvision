@@ -33,7 +33,7 @@ const PORT = process.env.PORT || 5001
 // Parse JSON request bodies so routes can read req.body
 app.use(express.json({ limit: '200kb' }))
 
-// CORS: only allow the website (Vite dev server by default, the Netlify site
+// CORS: only allow the website (Vite dev server by default, the Vercel site
 // when hosted; see CLIENT_ORIGIN) to call this API from a browser. Other
 // sites' pages are blocked.
 app.use(cors({ origin: clientOrigins() }))

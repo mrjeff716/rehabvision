@@ -33,7 +33,7 @@ export class ApiError extends Error {
 //  - Locally: empty, so requests go to "/api/..." on the website itself, and
 //    vite.config.js forwards them to the backend on port 5001.
 //  - Hosted: set VITE_API_URL to the backend's address when building
-//    (e.g. https://rehabvision-api.onrender.com in Netlify's environment
+//    (e.g. https://rehabvision-api.onrender.com in Vercel's environment
 //    variables). It's built into the website, so it is not a secret.
 const API_BASE = (import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
 
