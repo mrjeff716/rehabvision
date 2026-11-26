@@ -14,8 +14,10 @@ import { toast } from 'react-hot-toast'
 import { LoaderCircle, Play } from 'lucide-react'
 import useConfirm from '../components/useConfirm'
 import { useAuth } from '../auth/authContext'
-import { api, saveSession, flushPendingSessions } from '../api'
+import { api, addSessionReport, saveSession, flushPendingSessions } from '../api'
 import ExerciseCoach from '../pose/ExerciseCoach'
+import PainReport from '../components/PainReport'
+import PhysioDirectory from '../components/PhysioDirectory'
 import { LANGUAGES, getStrings, loadLang, saveLang } from '../i18n/messages'
 import { useLang } from '../i18n/AppLanguage'
 
@@ -25,6 +27,7 @@ const PatientHome = () => {
   const [coachLang, setCoachLang] = useState(loadLang)
   const [catalog, setCatalog] = useState(null) // exercise instructions
   const [active, setActive] = useState(null)   // the exercise being done now
+  const [finished, setFinished] = useState(null) // a finished session waiting for its pain report
   const [lookupId, setLookupId] = useState('')
   const [found, setFound] = useState(null)     // physio found by public ID, not yet linked
   const [error, setError] = useState('')
@@ -102,17 +105,28 @@ const PatientHome = () => {
     }
   }
 
-  // Called by ExerciseCoach when the patient presses "Finish session"
+  // Called by ExerciseCoach when the patient presses "Finish session".
+  // The session is saved first (so it's never lost), then we ask about pain.
   const handleFinish = async (summary) => {
     setActive(null)
     const good = summary.reps.filter((r) => r.reachedTarget).length
     try {
-      const savedNow = await saveSession(user._id, summary)
-      if (savedNow) toast.success(coach.ui.saved(good, summary.reps.length))
+      const id = await saveSession(user._id, summary)
+      if (id) toast.success(coach.ui.saved(good, summary.reps.length))
       else toast(t.offlineKept)
+      setFinished({ id })
     } catch (err) {
       toast.error(t.couldNotSave(tr(err.message)))
     }
+  }
+
+  const saveFinished = async (report) => {
+    try {
+      await addSessionReport(user._id, finished.id, report)
+    } catch (err) {
+      toast.error(t.couldNotSave(tr(err.message)))
+    }
+    setFinished(null)
   }
 
   // Doing an exercise: show only the coach
@@ -127,6 +141,8 @@ const PatientHome = () => {
       />
     )
   }
+
+  if (finished) return <PainReport onSave={saveFinished} />
 
   const exercises = user.exercises ?? []
   const catalogById = Object.fromEntries((catalog?.exercises ?? []).map((ex) => [ex.id, ex]))
@@ -149,7 +165,7 @@ const PatientHome = () => {
       <section>
         <h2 className="section-title">{t.myPhysio}</h2>
         {user.physio ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-accent-tint px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-accent-tint px-4 py-3">
             <span className="font-semibold text-ink">{user.physio.name} <bdi className="ms-1 text-sm font-medium text-accent" dir="ltr">({user.physio.publicId})</bdi></span>
             <button className="btn-danger" onClick={unlinkPhysio}>{t.removePhysio}</button>
           </div>
@@ -167,7 +183,7 @@ const PatientHome = () => {
               </button>
             </form>
             {found && (
-              <div role="status" className="mt-4 flex animate-alert-in flex-wrap items-center gap-3 border border-accent bg-accent-tint px-4 py-3 text-sm">
+              <div role="status" className="mt-4 flex animate-alert-in flex-wrap items-center gap-3 rounded-2xl bg-accent-tint px-4 py-3 text-sm ring-2 ring-accent/40">
                 <span className="me-auto text-ink">{t.isThisYourPhysio} <b>{found.name}</b> <bdi dir="ltr">({found.publicId})</bdi></span>
                 <button className="btn-primary" onClick={linkPhysio} disabled={busy}>{t.yesThatsThem}</button>
                 <button className="btn-secondary" onClick={() => setFound(null)}>{t.noSearchAgain}</button>
@@ -176,6 +192,8 @@ const PatientHome = () => {
           </>
         )}
       </section>
+
+      {!user.physio && <PhysioDirectory onPick={(p) => { setFound(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />}
 
       {/* --- Exercises --- */}
       <section>
@@ -199,9 +217,9 @@ const PatientHome = () => {
                       {exerciseNames[a.exerciseId] ?? a.exerciseId} · {t[a.side]}
                     </div>
                     <div className="text-sm font-medium text-ink">{t.repsFromTo(a.reps, a.startAngle, a.targetAngle)}</div>
-                    <div className="border-s-4 border-danger bg-danger-tint px-3 py-2 text-sm font-medium text-danger">{t.stopIf} <bdi>{a.stopCriteria}</bdi></div>
+                    <div className="rounded-xl border-s-4 border-danger bg-danger-tint px-3 py-2 text-sm font-medium text-danger">{t.stopIf} <bdi>{a.stopCriteria}</bdi></div>
                     {how && (
-                      <details className="mt-1 bg-paper px-4 py-3 text-sm text-ink [&[open]>summary]:mb-2 [&>p]:leading-relaxed">
+                      <details className="mt-1 rounded-2xl bg-paper px-4 py-3 text-sm text-ink [&[open]>summary]:mb-2 [&>p]:leading-relaxed">
                         <summary>{t.howToDoIt} {!translated && t.instructionsInEnglish && <span className="font-normal text-muted">{t.instructionsInEnglish}</span>}</summary>
                         <div {...(translated ? {} : { lang: "en", dir: "ltr" })} className="text-start">
                           <p>{how.setup}</p>

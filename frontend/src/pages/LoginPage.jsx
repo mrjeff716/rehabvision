@@ -7,8 +7,8 @@ import { Link } from 'react-router'
 import { LoaderCircle } from 'lucide-react'
 import { useAuth } from '../auth/authContext'
 import PasswordField from '../components/PasswordField'
-import SiteFooter from '../components/SiteFooter'
-import { LanguagePicker, useLang } from '../i18n/AppLanguage'
+import AuthLayout from '../components/AuthLayout'
+import { useLang } from '../i18n/AppLanguage'
 
 const LoginPage = () => {
   const { login } = useAuth()
@@ -31,8 +31,7 @@ const LoginPage = () => {
   }
 
   return (
-    <>
-      <div className="mx-auto flex max-w-md justify-end px-6 pt-4"><LanguagePicker /></div>
+    <AuthLayout>
       <main className="auth-card">
         <h1 className="mb-7 text-3xl font-semibold">{t.logIn}</h1>
         <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
@@ -54,8 +53,7 @@ const LoginPage = () => {
         </form>
         <p className="mt-6 text-center text-sm text-muted">{t.noAccount} <Link className="link" to="/register">{t.createOne}</Link></p>
       </main>
-      <SiteFooter />
-    </>
+    </AuthLayout>
   )
 }
 

@@ -7,17 +7,18 @@
 // =============================================================================
 
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { LoaderCircle } from 'lucide-react'
 import { useAuth } from '../auth/authContext'
 import PasswordField from '../components/PasswordField'
-import SiteFooter from '../components/SiteFooter'
-import { LanguagePicker, useLang } from '../i18n/AppLanguage'
+import AuthLayout from '../components/AuthLayout'
+import { useLang } from '../i18n/AppLanguage'
 
 const RegisterPage = () => {
   const { register } = useAuth()
   const { t, tr } = useLang()
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'patient' })
+  const [params] = useSearchParams() // the website's "I'm a physiotherapist" button opens ?role=physio
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: params.get('role') === 'physio' ? 'physio' : 'patient', referralId: '' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -41,8 +42,7 @@ const RegisterPage = () => {
   )
 
   return (
-    <>
-      <div className="mx-auto flex max-w-md justify-end px-6 pt-4"><LanguagePicker /></div>
+    <AuthLayout>
       <main className="auth-card">
         <h1 className="mb-7 text-3xl font-semibold">{t.titles['/register']}</h1>
         <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
@@ -80,6 +80,15 @@ const RegisterPage = () => {
           <p className="field-hint hint-empty">{t.hintRegPasswordEmpty}</p>
           <p className="field-hint hint-format">{t.hintPasswordShort}</p>
 
+          {form.role === 'physio' && (
+            <>
+              <label className="form-label" htmlFor="reg-referral">{t.referralId}</label>
+              <input id="reg-referral" className="field font-mono uppercase placeholder:normal-case" placeholder="PT-XXXXXX" dir="ltr"
+                value={form.referralId} onChange={update('referralId')} pattern="s*[Pp][Tt]-[A-Za-z0-9]{6}s*" aria-describedby="reg-referral-help" />
+              <p id="reg-referral-help" className="-mt-1 text-xs text-muted">{t.referralHelp}</p>
+            </>
+          )}
+
           <label className="consent">
             <input type="checkbox" required />
             <span>{t.agreePrefix} {policyLink('/terms', t.linkTerms)} {t.agreeMiddle} {policyLink('/privacy', t.linkPrivacy)}{t.agreeEnd}</span>
@@ -98,8 +107,7 @@ const RegisterPage = () => {
         </form>
         <p className="mt-6 text-center text-sm text-muted">{t.haveAccount} <Link className="link" to="/login">{t.logIn}</Link></p>
       </main>
-      <SiteFooter />
-    </>
+    </AuthLayout>
   )
 }
 

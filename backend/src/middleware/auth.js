@@ -54,6 +54,16 @@ export async function requireAuth(req, res, next) {
   }
 }
 
+// Reviewers (verification, aid, payments) are the accounts whose email is in
+// ADMIN_EMAILS (comma-separated). No one can make themselves a reviewer.
+export const isAdmin = (user) =>
+  !!user && (process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean).includes(user.email)
+
+export function requireAdmin(req, res, next) {
+  if (!isAdmin(req.user)) return res.status(403).json({ error: 'Only reviewers can do this' })
+  next()
+}
+
 // Use after requireAuth: only lets one role through (e.g. requireRole('physio'))
 export function requireRole(role) {
   return (req, res, next) => {

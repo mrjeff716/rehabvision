@@ -9,8 +9,8 @@ import { Link, useSearchParams } from 'react-router'
 import { LoaderCircle } from 'lucide-react'
 import { useAuth } from '../auth/authContext'
 import PasswordField from '../components/PasswordField'
-import SiteFooter from '../components/SiteFooter'
-import { LanguagePicker, useLang } from '../i18n/AppLanguage'
+import AuthLayout from '../components/AuthLayout'
+import { useLang } from '../i18n/AppLanguage'
 
 const ResetPasswordPage = () => {
   const { resetPassword } = useAuth()
@@ -39,8 +39,7 @@ const ResetPasswordPage = () => {
   }
 
   return (
-    <>
-      <div className="mx-auto flex max-w-md justify-end px-6 pt-4"><LanguagePicker /></div>
+    <AuthLayout>
       <main className="auth-card">
         {!token ? (
           <>
@@ -70,8 +69,7 @@ const ResetPasswordPage = () => {
           </>
         )}
       </main>
-      <SiteFooter />
-    </>
+    </AuthLayout>
   )
 }
 

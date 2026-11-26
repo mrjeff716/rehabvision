@@ -1,13 +1,14 @@
 // =============================================================================
 // HomePage.jsx — shows the right home page for the logged-in user's role,
-// with a header (name, role, language, log out) that slides away while
-// scrolling down and comes back on scroll up.
+// under a frosted header (name, role, language, log out) that slides away
+// while scrolling down and comes back on scroll up.
 // =============================================================================
 
-import { LogOut } from 'lucide-react'
+import { Link } from 'react-router'
+import { BadgeCheck, LogOut } from 'lucide-react'
 import { useAuth } from '../auth/authContext'
 import PatientHome from './PatientHome'
-import PhysioHome from './PhysioHome'
+import PhysioDashboard from './PhysioDashboard'
 import SiteFooter from '../components/SiteFooter'
 import useHideOnScroll from '../components/useHideOnScroll'
 import { LanguagePicker, useLang } from '../i18n/AppLanguage'
@@ -17,30 +18,38 @@ const HomePage = () => {
   const { t } = useLang()
   const headerHidden = useHideOnScroll()
   const isPhysio = user.role === 'physio'
+  const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
   return (
     <>
       <a href="#content" className="skip-link">{t.skip}</a>
       <header className="app-header" data-hidden={headerHidden}>
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 sm:px-6">
-          <p className="flex items-center gap-3 text-lg font-semibold tracking-tight" dir="ltr">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <Link to="/" className="flex items-center gap-2.5 text-lg font-semibold tracking-tight" dir="ltr">
             <img src="/logo-mark.png" alt="" className="h-9 w-9" />
-            RehabVision
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-muted">
-              <span className="font-semibold text-ink">{user.name}</span> · {isPhysio ? t.physio : t.patient}
+            <span className="sr-only sm:not-sr-only">RehabVision</span>
+          </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="flex items-center gap-2.5">
+              <span title={user.name} aria-hidden className="grid h-9 w-9 place-items-center rounded-full bg-accent text-sm font-semibold text-white">{initials}</span>
+              <span className="hidden flex-col leading-tight sm:flex">
+                <span className="text-sm font-semibold">{user.name}</span>
+                <span className="flex items-center gap-1 text-xs text-muted">
+                  {isPhysio ? t.physio : t.patient}
+                  {isPhysio && user.verification?.status === 'approved' && <BadgeCheck aria-label={t.vStatus.approved} className="h-3.5 w-3.5 text-accent" />}
+                </span>
+              </span>
             </span>
             <LanguagePicker />
-            <button className="btn-secondary" onClick={logout}>
-              <LogOut aria-hidden className="rtl:-scale-x-100" /> {t.logout}
+            <button className="btn-ghost" onClick={logout}>
+              <LogOut aria-hidden className="rtl:-scale-x-100" /> <span className="sr-only sm:not-sr-only">{t.logout}</span>
             </button>
           </div>
         </div>
       </header>
-      <main id="content" className="mx-auto max-w-3xl animate-fade-in px-4 pb-8 pt-8 sm:px-6 sm:pt-12">
+      <main id="content" className="mx-auto max-w-5xl animate-fade-in px-4 pb-8 pt-8 sm:px-6 sm:pt-10">
         <h1 className="sr-only">{isPhysio ? t.physioHome : t.patientHome}</h1>
-        {isPhysio ? <PhysioHome /> : <PatientHome />}
+        {isPhysio ? <PhysioDashboard /> : <PatientHome />}
       </main>
       <SiteFooter />
     </>

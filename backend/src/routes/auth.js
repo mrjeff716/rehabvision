@@ -11,7 +11,7 @@ import { createHash, randomBytes, randomInt } from 'node:crypto'
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import User from '../models/User.js'
-import { requireAuth, signToken } from '../middleware/auth.js'
+import { isAdmin, requireAuth, signToken } from '../middleware/auth.js'
 import { authLimiter, resetLimiter } from '../middleware/rateLimiter.js'
 import { sendPasswordResetEmail } from '../config/mailer.js'
 import { clientUrl } from '../config/deploy.js'
@@ -40,12 +40,12 @@ export async function publicUser(user) {
   if (user.role === 'patient' && user.physio) {
     await user.populate('physio', 'name publicId')
   }
-  return user.toJSON()
+  return { ...user.toJSON(), isAdmin: isAdmin(user) }
 }
 
 router.post('/register', authLimiter, async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body ?? {}
+    const { name, email, password, role, referralId } = req.body ?? {}
 
     if (typeof name !== 'string' || !name.trim() || name.trim().length > 100) {
       return res.status(400).json({ error: 'Please enter your name (max 100 characters)' })
@@ -69,6 +69,12 @@ router.post('/register', authLimiter, async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS)
     const base = { name: name.trim(), email: normalizedEmail, passwordHash, role }
     if (role === 'patient') base.exercises = []
+    // Physio-to-physio referral: both get a free month once the new physio is verified
+    if (role === 'physio' && typeof referralId === 'string' && referralId.trim()) {
+      const referrer = await User.findOne({ publicId: referralId.trim().toUpperCase(), role: 'physio' }, '_id')
+      if (!referrer) return res.status(400).json({ error: 'No physiotherapist found with that referral ID' })
+      base.referredBy = referrer._id
+    }
 
     // Physios get a unique public ID. A clash is very unlikely (32^6 ≈ 1 billion
     // options), but if it happens we just try another one.

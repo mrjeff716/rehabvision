@@ -7,8 +7,8 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { LoaderCircle } from 'lucide-react'
 import { api } from '../api'
-import SiteFooter from '../components/SiteFooter'
-import { LanguagePicker, useLang } from '../i18n/AppLanguage'
+import AuthLayout from '../components/AuthLayout'
+import { useLang } from '../i18n/AppLanguage'
 
 const ForgotPasswordPage = () => {
   const { t, tr } = useLang()
@@ -32,8 +32,7 @@ const ForgotPasswordPage = () => {
   }
 
   return (
-    <>
-      <div className="mx-auto flex max-w-md justify-end px-6 pt-4"><LanguagePicker /></div>
+    <AuthLayout>
       <main className="auth-card">
         {sentTo ? (
           <>
@@ -63,8 +62,7 @@ const ForgotPasswordPage = () => {
           </>
         )}
       </main>
-      <SiteFooter />
-    </>
+    </AuthLayout>
   )
 }
 

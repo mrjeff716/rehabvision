@@ -8,16 +8,14 @@ export const BUSINESS = {
   country: 'Lebanon',
   email: 'rehabvisionofficial@gmail.com',
   privacyEmail: 'rehabvisionofficial@gmail.com',
-  lastUpdated: '2026-11-24', // date these policies take effect (YYYY-MM-DD)
+  lastUpdated: '2026-11-26', // date these policies take effect (YYYY-MM-DD)
 }
 
-// Monthly price per physiotherapist, by how many patients are linked at the same time.
-// maxPatients: null = no upper limit. Patients never pay.
-export const PLANS = [
-  { maxPatients: 10, price: 30 },
-  { maxPatients: 25, price: 50 },
-  { maxPatients: null, price: 75 },
-]
+// Monthly price per physiotherapist, by how many active patients they can have
+// (business plan slide 4; the app's own numbers live in src/billing/pricing.js).
+// Patients never pay.
+import { PLANS as PRICED } from '../billing/pricing'
+export const PLANS = Object.values(PRICED)
 
 // Policy numbers, so all three languages always say the same thing
 export const POLICY = {

@@ -32,6 +32,8 @@ const flagReasons = (f, t) => {
   if (f.sessions < 3) reasons.push(t.flagFewSessions(f.sessions))
   if (f.total > 0 && f.quality < 0.5) reasons.push(t.flagLowQuality(Math.round(f.quality * 100)))
   if (f.sessions > 0 && f.total === 0) reasons.push(t.flagNoReps)
+  if (f.maxPain >= 7) reasons.push(t.flagPain(f.maxPain))
+  if (f.incidents?.length) reasons.push(t.flagIncident(f.incidents.join(' | ')))
   return reasons
 }
 
@@ -87,17 +89,18 @@ const PhysioHome = () => {
 
   return (
     <div className="stagger flex flex-col gap-8">
-      <section className="rule-top pb-2 pt-6 text-ink">
-        <p className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+      <section className="relative overflow-hidden rounded-[2rem] bg-ink p-6 text-white shadow-lift sm:p-8">
+        <div aria-hidden className="absolute -end-16 -top-20 h-64 w-64 rounded-full bg-accent/50 blur-3xl" />
+        <p className="relative flex flex-col gap-2 text-sm font-semibold text-white/70">
           {t.yourPublicId}
-          <code dir="ltr" className="self-start text-4xl normal-case tracking-[0.04em] text-ink sm:text-6xl">{user.publicId}</code>
+          <code dir="ltr" className="self-start text-4xl tracking-[0.06em] text-white sm:text-6xl">{user.publicId}</code>
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-4">
-          <button className="btn-secondary" onClick={copyId}>
+        <div className="relative mt-5 flex flex-wrap items-center gap-4">
+          <button className="btn bg-white text-ink hover:bg-accent-tint" onClick={copyId}>
             {copied ? <Check key="done" aria-hidden className="animate-icon-in text-success" /> : <Copy key="copy" aria-hidden className="animate-icon-in" />}
             {copied ? t.copied : t.copyId}
           </button>
-          <p className="text-sm text-muted">{t.giveIdToPatients}</p>
+          <p className="text-sm text-white/75">{t.giveIdToPatients}</p>
         </div>
         <p className="sr-only" role="status">{copied ? t.idCopied : ''}</p>
       </section>
@@ -105,16 +108,34 @@ const PhysioHome = () => {
       {error && <p role="alert" className="alert-error">{tr(error)}</p>}
 
       <section>
-        <div className="rule-top mb-4 flex items-center justify-between gap-3 pt-1">
-          <h2 className="section-title mb-0 pt-0 after:hidden">{t.myPatients}</h2>
+        <h2 className="section-title">{t.needsAttention}</h2>
+        {flags === null ? (
+          <div className="skeleton h-12" aria-busy="true" aria-label={t.loading} />
+        ) : flags.length === 0 ? (
+          <p className="text-sm text-muted">{t.noFlagged}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {flags.map((f) => (
+              <li key={f.patientId} className="animate-alert-in rounded-2xl border-s-4 border-caution bg-caution-tint px-4 py-2.5 text-sm text-caution">
+                <b>{f.name}</b>: {flagReasons(f, t).join('; ')}
+                {f.lastSeen && ` (${t.lastSession(new Date(f.lastSeen).toLocaleDateString(locale))})`}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between gap-3 pt-1">
+          <h2 className="section-title mb-0">{t.myPatients}</h2>
           <button className="btn-secondary" onClick={refresh} disabled={refreshing}>
             <RefreshCw aria-hidden className={refreshing ? 'animate-spin' : ''} /> {t.refreshList}
           </button>
         </div>
         {patients === null ? (
           <div className="flex flex-col gap-4" aria-busy="true" aria-label={t.loadingPatients}>
-            <div className="skeleton h-40 border border-rule" />
-            <div className="skeleton h-40 border border-rule" />
+            <div className="skeleton h-40" />
+            <div className="skeleton h-40" />
           </div>
         ) : patients.length === 0 ? (
           <p className="card border-dashed px-5 py-8 text-center text-sm text-muted">{t.noPatientsYet}</p>
@@ -127,23 +148,6 @@ const PhysioHome = () => {
         )}
       </section>
 
-      <section>
-        <h2 className="section-title">{t.needsAttention}</h2>
-        {flags === null ? (
-          <div className="skeleton h-12" aria-busy="true" aria-label={t.loading} />
-        ) : flags.length === 0 ? (
-          <p className="text-sm text-muted">{t.noFlagged}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {flags.map((f) => (
-              <li key={f.patientId} className="animate-alert-in border-s-4 border-caution bg-caution-tint px-4 py-2.5 text-sm text-caution">
-                <b>{f.name}</b>: {flagReasons(f, t).join('; ')}
-                {f.lastSeen && ` (${t.lastSession(new Date(f.lastSeen).toLocaleDateString(locale))})`}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
 
       {catalog && (
         <section className="text-sm leading-relaxed text-muted">
@@ -233,7 +237,7 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
         sessions.length === 0 ? <p className="mt-4 animate-fade-up text-sm text-muted">{t.noSessionsYet}</p> : (
           <table className="data-table mt-4 block animate-fade-up overflow-x-auto border border-rule sm:table">
             <thead>
-              <tr><th>{t.thDate}</th><th>{t.thExercise}</th><th>{t.thSide}</th><th>{t.thGoodTotal}</th><th>{t.thTarget}</th></tr>
+              <tr><th>{t.thDate}</th><th>{t.thExercise}</th><th>{t.thSide}</th><th>{t.thGoodTotal}</th><th>{t.thTarget}</th><th>{t.thPain}</th></tr>
             </thead>
             <tbody>
               {sessions.map((s) => (
@@ -243,6 +247,9 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
                   <td>{t[s.side] ?? s.side}</td>
                   <td>{s.goodReps} / {s.totalReps}</td>
                   <td>{s.plan?.targetAngle}°</td>
+                  <td className={s.painScore >= 7 || s.incident ? 'font-semibold text-danger' : ''}>
+                    {s.painScore ?? '–'}{s.incident && <span className="block text-xs font-normal">{s.incident}</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>

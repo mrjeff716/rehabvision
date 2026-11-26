@@ -688,10 +688,17 @@ const ar = {
   },
 }
 
+import { PRO } from './pro'
+
 export const UI = { en, fr, ar }
 
 // Strings for a language; anything missing falls back to English
 export const uiStrings = (lang) => {
   const chosen = UI[lang] ?? en
-  return { ...en, ...chosen, titles: { ...en.titles, ...chosen.titles }, err: { ...en.err, ...chosen.err } }
+  const pro = PRO[lang] ?? PRO.en // website, verification, billing, aid, review (pro.js)
+  return {
+    ...en, ...PRO.en, ...chosen, ...pro,
+    titles: { ...en.titles, ...PRO.en.titlesPro, ...chosen.titles, ...pro.titlesPro },
+    err: { ...en.err, ...PRO.en.errPro, ...chosen.err, ...pro.errPro },
+  }
 }

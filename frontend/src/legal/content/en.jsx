@@ -31,12 +31,16 @@ export default {
           <li><b>Exercise results:</b> for each session, the exercise and side, the plan at that time, the highest angle reached in each repetition and whether it reached the target, the number of repetitions, an optional pain score, and the date and time.</li>
           <li><b>Technical data:</b> your IP address is held briefly in the server&rsquo;s memory to limit how many requests one connection can make. It is not saved in our database. Our hosting providers may keep their own server logs.</li>
           <li><b>Billing (physiotherapists and institutions only):</b> the details needed to invoice you and record your payments. Payments are made directly to us, outside the app; we never see or store card numbers in the app.</li>
+          <li><b>Physiotherapist verification:</b> photos or scans you upload of your ID or passport (front and back), a live selfie holding your ID, your OPTL card (front and back) and current dues receipt, your degree or equivalence, and proof of your workplace; optionally insurance and training certificates. We also store your phone number, pricing region, clinic name, the languages you treat in, and the review decision.</li>
+          <li><b>Financial aid (physiotherapists who apply):</b> the aid tracks you choose and their documents: income declaration and proof, municipality or mokhtar letter, graduation dates, displacement, damage or injury evidence, pledge or sponsor letters, and the decision.</li>
+          <li><b>Payments:</b> the plan you choose, the Whish Money or OMT transfer reference you enter, the amount, and until when you have paid.</li>
+          <li><b>Pain and incidents:</b> after a session, patients can rate their pain from 0 to 10 and describe a problem. Your physiotherapist sees it with the session.</li>
         </ul>
         <p>Exercise plans and results are <b>health data</b>. We only use them to run the service for you and your physiotherapist.</p>
 
         <h2>What we do not collect</h2>
         <ul>
-          <li><b>No video or photos.</b> The camera image is analysed on your own device to measure the angle of your joint. It is never uploaded or saved. Only the numbers listed above are sent.</li>
+          <li><b>No video or photos of your exercises.</b> The camera image is analysed on your own device to measure the angle of your joint. It is never uploaded or saved. Only the numbers listed above are sent.</li>
           <li><b>No tracking.</b> {B.name} has no analytics, advertising or social-media trackers, and sets no cookies. See <Link to="/cookies">Cookies and storage</Link>.</li>
           <li>We do not sell your data or use it for advertising.</li>
         </ul>
@@ -47,6 +51,8 @@ export default {
           <li><b>Patients</b> who enter a physiotherapist&rsquo;s public ID see that physiotherapist&rsquo;s name and ID.</li>
           <li><b>Service providers</b> that run the service for us: Netlify (hosts the website), Render (runs our server), our private MongoDB database, and our email provider (sends password-reset emails). They may only use the data to provide their service to us.</li>
           <li>Authorities, only where the law requires us to share it.</li>
+          <li><b>Our review team</b> sees physiotherapists&rsquo; verification and aid documents, only to decide on them. With your consent we may check them with the Order of Physiotherapists (OPTL) or the issuer, and audit about 10% of approved aid files each quarter.</li>
+          <li><b>Logged-in patients</b> see the name, region, clinic, languages and verified badge of physiotherapists who choose to be listed in the directory.</li>
         </ul>
 
         <h2>Why we use it (legal basis)</h2>
@@ -65,6 +71,7 @@ export default {
 
         <h2>How long we keep it</h2>
         <p>We keep your account and results while your account is open. When you ask us to delete your account, we delete it and its results within {P.deletionDays} days, except records the law requires us to keep (such as invoices).</p>
+        <p>Verification and aid documents are kept while your account is open, so we can re-check them yearly and audit aid. When an aid period ends, we delete its documents within 12 months unless an audit or dispute needs them.</p>
 
         <h2>Your rights</h2>
         <p>You can ask to see the data we hold about you, correct it, delete it, receive a copy, or object to or restrict its use. To make a request, including closing your account, email {mailto(B.privacyEmail)}. We answer within {P.deletionDays} days. If you are not satisfied, you can complain to the data-protection authority where you live.</p>
@@ -114,10 +121,13 @@ export default {
           <li>You are responsible for the exercises, angles, safe ranges and stop criteria you assign, and for confirming each patient is clinically cleared for them.</li>
           <li>Use patients&rsquo; data only to treat them, and follow the health-data and professional rules that apply to you.</li>
           <li>Subscriptions, cancellation and refunds are covered by the <Link to="/pricing">Pricing, cancellation and refund policy</Link>.</li>
+          <li><b>Verification:</b> patients can only find and add you once our team has verified your documents. We re-check them every year, with a 30-day grace period. We may suspend an account whose documents are false or expired.</li>
+          <li><b>Remote care:</b> {B.name} supports home exercises you prescribe. Make sure any remote follow-up is allowed by the rules that apply to you; World Physiotherapy lists telehealth as not permitted in Lebanon, so take written advice before offering remote treatment.</li>
+          <li><b>Financial aid</b> is decided by our team. False documents mean the aid is removed and you cannot apply again for 12 months.</li>
         </ul>
 
         <h2>Price</h2>
-        <p>{B.name} is free for patients. Physiotherapists, or the institution they work for, pay a monthly subscription. No payments are taken in the app; they are arranged directly with {B.name}.</p>
+        <p>{B.name} is free for patients. Physiotherapists pay a monthly plan, by Whish Money or OMT transfer, which we confirm. Plans, discounts, aid and refunds are explained in the <Link to="/pricing">Pricing, cancellation and refund policy</Link>.</p>
 
         <h2>Acceptable use</h2>
         <p>Do not misuse the service: no access to other people&rsquo;s accounts or data, no attempts to break or overload it, and nothing unlawful.</p>
@@ -141,7 +151,7 @@ export default {
     title: 'Pricing, cancellation and refunds',
     Body: () => (
       <>
-        <p>{B.name} is <b>free for patients</b>. Physiotherapists, or the institution they work for, pay a monthly subscription per physiotherapist. No payments are taken in the app; we invoice you and you pay {B.name} directly.</p>
+        <p>{B.name} is <b>free for patients</b>. Each physiotherapist pays a monthly plan based on how many active patients they have. You pay by Whish Money or OMT transfer and enter the receipt reference in the app; we confirm it within 1 working day.</p>
 
         <h2>Prices</h2>
         <table className="data-table">
@@ -154,11 +164,29 @@ export default {
         </table>
         <p>Prices are in US dollars. Each party pays its own bank or transfer fees. If a tax applies, it is shown on the invoice. An institution pays the same price for each of its physiotherapists unless we agree otherwise in writing.</p>
 
+        <h2>Regional discount</h2>
+        <p>Where you practise sets a discount from 0% (Beirut) to 50% (Akkar), based on typical clinic prices and need in the region: D = min(50%, 0.5 × (1 − P / 35) + 0.3 × N), rounded to the nearest 5%, where P is the region&rsquo;s typical session price in dollars and N a need score from 0 to 1. Your workplace proof confirms the region.</p>
+
+        <h2>Financial aid</h2>
+        <ul>
+          <li>Five tracks add to the regional discount: early career (+30%, once), income hardship (+10 to +40%), war or displacement (+20 to +30%), community care pledge (+20%) and sponsored seats (up to 100%, paid by an NGO, the Ministry of Public Health, the OPTL or a university).</li>
+          <li>The total discount is capped at 75%, and the price never goes below $6 a month, unless a sponsor pays for your seat.</li>
+          <li>We decide within 5 working days. Totals above 50% need a second reviewer. Aid lasts 6 months and is renewed with fresh proof.</li>
+        </ul>
+
+        <h2>Paying a year ahead, pilot and referrals</h2>
+        <ul>
+          <li>Pay 12 months ahead for the price of 10.</li>
+          <li>Pilot physiotherapists get their first month free, then half price for 12 months.</li>
+          <li>Refer another physiotherapist with your public ID: you both get one free month once they are verified.</li>
+        </ul>
+
         <h2>Billing</h2>
         <ul>
           <li>You are billed monthly, in advance, from the day your subscription starts.</li>
           <li>Your plan depends on how many patients are linked to you at the same time. If you go above your plan&rsquo;s limit, we will ask you to move to the next plan from your next billing month. We never charge for past months.</li>
           <li>Moving to a bigger plan takes effect straight away; the new price starts from your next billing month. Moving to a smaller plan takes effect from your next billing month, as long as your patients fit within it.</li>
+          <li>You cannot link more patients than your plan allows; choose a bigger plan first in Plan and billing.</li>
         </ul>
 
         <h2>Cancelling</h2>

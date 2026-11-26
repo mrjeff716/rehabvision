@@ -35,8 +35,8 @@ export default function AuthProvider({ children }) {
     return data.user;
   }, []);
 
-  const register = useCallback(async ({ name, email, password, role }) => {
-    const data = await api("/auth/register", { method: "POST", body: { name, email, password, role } });
+  const register = useCallback(async ({ name, email, password, role, referralId }) => {
+    const data = await api("/auth/register", { method: "POST", body: { name, email, password, role, referralId: referralId || undefined } });
     setToken(data.token);
     setUser(data.user);
     return data.user;

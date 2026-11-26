@@ -29,12 +29,16 @@ export default {
           <li><b>Résultats des exercices :</b> pour chaque séance, l’exercice et le côté, le programme à ce moment-là, l’angle maximal atteint à chaque répétition et si l’objectif a été atteint, le nombre de répétitions, un score de douleur facultatif, ainsi que la date et l’heure.</li>
           <li><b>Données techniques :</b> votre adresse IP est gardée brièvement dans la mémoire du serveur pour limiter le nombre de requêtes par connexion. Elle n’est pas enregistrée dans notre base de données. Nos hébergeurs peuvent conserver leurs propres journaux.</li>
           <li><b>Facturation (physiothérapeutes et établissements uniquement) :</b> les informations nécessaires pour vous facturer et enregistrer vos paiements. Les paiements nous sont faits directement, en dehors de l’application ; nous ne voyons ni ne stockons jamais de numéro de carte dans l’application.</li>
+          <li><b>Vérification des kinésithérapeutes :</b> les photos ou scans que vous envoyez de votre pièce d’identité ou passeport (recto et verso), un selfie en direct avec votre pièce d’identité, votre carte OPTL (recto et verso) et le reçu de cotisation de l’année, votre diplôme ou équivalence, et un justificatif de lieu de travail ; en option, assurance et certificats de formation. Nous conservons aussi votre téléphone, votre région tarifaire, le nom du cabinet, les langues dans lesquelles vous soignez, et la décision d’examen.</li>
+          <li><b>Aide financière (kinésithérapeutes qui la demandent) :</b> les volets choisis et leurs justificatifs : déclaration et justificatifs de revenus, lettre de la municipalité ou du moukhtar, dates de diplôme, preuves de déplacement, de dégâts ou de blessure, lettres d’engagement ou de parrainage, et la décision.</li>
+          <li><b>Paiements :</b> la formule choisie, la référence du transfert Whish Money ou OMT que vous saisissez, le montant et la date jusqu’à laquelle vous avez payé.</li>
+          <li><b>Douleur et incidents :</b> après une séance, le patient peut noter sa douleur de 0 à 10 et décrire un problème. Votre kinésithérapeute le voit avec la séance.</li>
         </ul>
         <p>Les programmes d’exercices et les résultats sont des <b>données de santé</b>. Nous les utilisons uniquement pour faire fonctionner le service pour vous et votre physiothérapeute.</p>
 
         <h2>Ce que nous ne collectons pas</h2>
         <ul>
-          <li><b>Aucune vidéo ni photo.</b> L’image de la caméra est analysée sur votre propre appareil pour mesurer l’angle de votre articulation. Elle n’est jamais envoyée ni enregistrée. Seuls les chiffres ci-dessus sont envoyés.</li>
+          <li><b>Aucune vidéo ni photo de vos exercices.</b> L’image de la caméra est analysée sur votre propre appareil pour mesurer l’angle de votre articulation. Elle n’est jamais envoyée ni enregistrée. Seuls les chiffres ci-dessus sont envoyés.</li>
           <li><b>Aucun pistage.</b> {B.name} n’utilise aucun outil d’analyse, de publicité ou de réseaux sociaux, et ne dépose aucun cookie. Voir <Link to="/cookies">Cookies et stockage</Link>.</li>
           <li>Nous ne vendons pas vos données et ne les utilisons pas à des fins publicitaires.</li>
         </ul>
@@ -45,6 +49,8 @@ export default {
           <li><b>Les patients</b> qui saisissent l’identifiant public d’un physiothérapeute voient son nom et son identifiant.</li>
           <li><b>Les prestataires</b> qui font fonctionner le service pour nous : Netlify (héberge le site), Render (fait fonctionner notre serveur), notre base de données MongoDB privée et notre fournisseur d’e-mail (envoie les e-mails de réinitialisation du mot de passe). Ils ne peuvent utiliser les données que pour nous fournir leur service.</li>
           <li>Les autorités, uniquement lorsque la loi nous y oblige.</li>
+          <li><b>Notre équipe d’examen</b> voit les documents de vérification et d’aide des kinésithérapeutes, uniquement pour décider. Avec votre accord, nous pouvons les vérifier auprès de l’Ordre des physiothérapeutes (OPTL) ou de l’émetteur, et auditer environ 10 % des dossiers d’aide acceptés chaque trimestre.</li>
+          <li><b>Les patients connectés</b> voient le nom, la région, le cabinet, les langues et le badge vérifié des kinésithérapeutes qui choisissent d’apparaître dans l’annuaire.</li>
         </ul>
 
         <h2>Pourquoi nous les utilisons (base légale)</h2>
@@ -63,6 +69,7 @@ export default {
 
         <h2>Durée de conservation</h2>
         <p>Nous conservons votre compte et vos résultats tant que votre compte est ouvert. Lorsque vous nous demandez de supprimer votre compte, nous le supprimons avec ses résultats dans un délai de {P.deletionDays} jours, sauf les documents que la loi nous oblige à garder (comme les factures).</p>
+        <p>Les documents de vérification et d’aide sont conservés tant que votre compte est ouvert, pour la revérification annuelle et l’audit de l’aide. À la fin d’une période d’aide, nous supprimons ses documents dans les 12 mois, sauf si un audit ou un litige l’exige.</p>
 
         <h2>Vos droits</h2>
         <p>Vous pouvez demander à consulter les données que nous détenons sur vous, à les corriger, à les supprimer, à en recevoir une copie, ou à vous opposer à leur utilisation ou à la limiter. Pour toute demande, y compris la fermeture de votre compte, écrivez à {mailto(B.privacyEmail)}. Nous répondons dans un délai de {P.deletionDays} jours. Si vous n’êtes pas satisfait, vous pouvez saisir l’autorité de protection des données de votre lieu de résidence.</p>
@@ -112,10 +119,13 @@ export default {
           <li>Vous êtes responsable des exercices, angles, amplitudes sûres et critères d’arrêt que vous attribuez, et de confirmer que chaque patient est apte à les faire.</li>
           <li>Utilisez les données des patients uniquement pour les soigner, en respectant les règles professionnelles et de protection des données de santé qui vous concernent.</li>
           <li>Les abonnements, la résiliation et les remboursements sont régis par la <Link to="/pricing">Politique de tarifs, résiliation et remboursement</Link>.</li>
+          <li><b>Vérification :</b> les patients ne peuvent vous trouver et vous ajouter qu’une fois vos documents vérifiés par notre équipe. Nous les revérifions chaque année, avec un délai de grâce de 30 jours. Nous pouvons suspendre un compte dont les documents sont faux ou expirés.</li>
+          <li><b>Soins à distance :</b> {B.name} accompagne les exercices à domicile que vous prescrivez. Assurez-vous que tout suivi à distance est permis par les règles qui s’appliquent à vous ; World Physiotherapy indique que la télésanté n’est pas autorisée au Liban, demandez donc un avis écrit avant de proposer un traitement à distance.</li>
+          <li><b>L’aide financière</b> est décidée par notre équipe. De faux documents entraînent le retrait de l’aide et l’impossibilité de la redemander pendant 12 mois.</li>
         </ul>
 
         <h2>Prix</h2>
-        <p>{B.name} est gratuit pour les patients. Les physiothérapeutes, ou l’établissement où ils travaillent, paient un abonnement mensuel. Aucun paiement n’est effectué dans l’application ; ils sont réglés directement avec {B.name}.</p>
+        <p>{B.name} est gratuit pour les patients. Les kinésithérapeutes paient une formule mensuelle, par transfert Whish Money ou OMT, que nous confirmons. Formules, remises, aide et remboursements sont expliqués dans la <Link to="/pricing">politique de tarifs, résiliation et remboursement</Link>.</p>
 
         <h2>Utilisation acceptable</h2>
         <p>N’utilisez pas le service de manière abusive : pas d’accès aux comptes ou données d’autrui, pas de tentative de le casser ou de le surcharger, rien d’illégal.</p>
@@ -139,7 +149,7 @@ export default {
     title: 'Tarifs, résiliation et remboursements',
     Body: () => (
       <>
-        <p>{B.name} est <b>gratuit pour les patients</b>. Les physiothérapeutes, ou l’établissement où ils travaillent, paient un abonnement mensuel par physiothérapeute. Aucun paiement n’est effectué dans l’application ; nous vous envoyons une facture et vous payez {B.name} directement.</p>
+        <p>{B.name} est <b>gratuit pour les patients</b>. Chaque kinésithérapeute paie une formule mensuelle selon son nombre de patients actifs. Vous payez par transfert Whish Money ou OMT et saisissez la référence du reçu dans l’application ; nous la confirmons sous 1 jour ouvré.</p>
 
         <h2>Tarifs</h2>
         <table className="data-table">
@@ -152,11 +162,29 @@ export default {
         </table>
         <p>Les prix sont en dollars américains. Chaque partie paie ses propres frais bancaires ou de transfert. Si une taxe s’applique, elle figure sur la facture. Un établissement paie le même prix pour chacun de ses physiothérapeutes, sauf accord écrit contraire.</p>
 
+        <h2>Remise régionale</h2>
+        <p>Votre lieu d’exercice donne une remise de 0 % (Beyrouth) à 50 % (Akkar), selon les prix habituels des séances et les besoins de la région : D = min(50 %, 0,5 × (1 − P / 35) + 0,3 × N), arrondi aux 5 % les plus proches, où P est le prix habituel d’une séance dans la région en dollars et N un indice de besoin de 0 à 1. Votre justificatif de lieu de travail confirme la région.</p>
+
+        <h2>Aide financière</h2>
+        <ul>
+          <li>Cinq volets s’ajoutent à la remise régionale : début de carrière (+30 %, une fois), difficultés de revenus (+10 à +40 %), guerre ou déplacement (+20 à +30 %), engagement de soins solidaires (+20 %) et places parrainées (jusqu’à 100 %, payées par une ONG, le ministère de la Santé publique, l’OPTL ou une université).</li>
+          <li>La remise totale est plafonnée à 75 %, et le prix ne descend jamais sous 6 $ par mois, sauf si un parrain paie votre place.</li>
+          <li>Nous décidons sous 5 jours ouvrés. Au-delà de 50 % au total, un second examinateur est nécessaire. L’aide dure 6 mois et se renouvelle avec de nouveaux justificatifs.</li>
+        </ul>
+
+        <h2>Paiement annuel, pilote et parrainage</h2>
+        <ul>
+          <li>Payez 12 mois d’avance pour le prix de 10.</li>
+          <li>Les kinésithérapeutes du pilote ont le premier mois offert, puis la moitié du prix pendant 12 mois.</li>
+          <li>Recommandez un autre kinésithérapeute avec votre identifiant public : vous recevez chacun un mois offert une fois son compte vérifié.</li>
+        </ul>
+
         <h2>Facturation</h2>
         <ul>
           <li>Vous êtes facturé chaque mois, d’avance, à partir du jour où votre abonnement commence.</li>
           <li>Votre formule dépend du nombre de patients liés à vous en même temps. Si vous dépassez la limite de votre formule, nous vous demanderons de passer à la formule suivante à partir du mois de facturation suivant. Nous ne facturons jamais les mois passés.</li>
           <li>Le passage à une formule supérieure prend effet immédiatement ; le nouveau prix s’applique à partir du mois de facturation suivant. Le passage à une formule inférieure prend effet au mois de facturation suivant, à condition que vos patients y tiennent.</li>
+          <li>Vous ne pouvez pas lier plus de patients que votre formule ne le permet ; choisissez d’abord une formule plus grande dans Formule et paiement.</li>
         </ul>
 
         <h2>Résiliation</h2>

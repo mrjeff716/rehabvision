@@ -1,11 +1,17 @@
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource/ibm-plex-sans-arabic/400.css";
+@import "@fontsource/ibm-plex-sans-arabic/600.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* =============================================================================
    Design layer: visual styling only, no behaviour.
-   Theme: Swiss. White surface, one sans family, 1px rules instead of shadows,
-   square corners, a single accent (Yves Klein Blue), numerals as composition.
+   Theme: "range of motion". Petrol ink on cool mist, cedar teal for action,
+   amber when a target is reached. Soft layered corners (panels 28px,
+   controls 16px, round buttons), petrol-tinted shadows, motion that answers
+   what the person did. The one showpiece is the moving angle arc (RangeArc).
    ============================================================================= */
 
 @layer base {
@@ -18,15 +24,25 @@
     font-size: 112.5%;
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply min-h-screen bg-white font-sans leading-relaxed text-ink antialiased;
+    @apply min-h-screen bg-mist font-sans leading-relaxed text-ink antialiased;
     font-feature-settings: "tnum" 1; /* aligned figures for angles and reps */
+    font-optical-sizing: auto;
+  }
+  /* Arabic reads better in Plex Sans Arabic for every word, not just fallbacks */
+  [lang="ar"] body, body:lang(ar) {
+    font-family: "IBM Plex Sans Arabic", "Bricolage Grotesque Variable", system-ui, sans-serif;
   }
 
   h1, h2, h3 {
     @apply font-semibold tracking-tight text-ink;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
   }
 
   ::selection {
@@ -34,7 +50,7 @@
   }
 
   :focus-visible {
-    @apply outline outline-2 outline-offset-2 outline-accent;
+    @apply rounded-md outline outline-[3px] outline-offset-2 outline-accent;
   }
 
   input[type="radio"],
@@ -51,22 +67,20 @@
     @apply font-mono;
   }
 
-  /* Disclosure ("How to do it"): chevron, no animation needed */
+  /* Disclosure ("How to do it"): a chevron that turns as it opens */
   details > summary {
-    @apply cursor-pointer select-none list-none font-semibold text-accent hover:underline;
+    @apply cursor-pointer select-none list-none font-semibold text-accent transition-colors hover:text-accent-hover;
   }
   details > summary::-webkit-details-marker {
     display: none;
   }
   details > summary::before {
     content: "";
-    @apply me-2.5 inline-block h-2 w-2 -translate-y-px rotate-[-45deg] border-b-2 border-e-2 border-current transition-transform duration-150;
+    @apply me-2.5 inline-block h-2 w-2 -translate-y-px rotate-[-45deg] border-b-2 border-e-2 border-current transition-transform duration-300 ease-out;
   }
   details[open] > summary::before {
     @apply rotate-45;
   }
-  /* In RTL the logical border-e is on the left, so the chevron is already mirrored:
-     rotate the other way (closed: points left, open: points down). */
   [dir="rtl"] details > summary::before {
     @apply rotate-45;
   }
@@ -80,88 +94,103 @@
   .stagger > * {
     @apply animate-fade-up;
   }
-  .stagger > *:nth-child(2) { animation-delay: 60ms; }
-  .stagger > *:nth-child(3) { animation-delay: 120ms; }
-  .stagger > *:nth-child(4) { animation-delay: 180ms; }
-  .stagger > *:nth-child(5) { animation-delay: 240ms; }
-  .stagger > *:nth-child(n+6) { animation-delay: 300ms; }
+  .stagger > *:nth-child(2) { animation-delay: 70ms; }
+  .stagger > *:nth-child(3) { animation-delay: 140ms; }
+  .stagger > *:nth-child(4) { animation-delay: 210ms; }
+  .stagger > *:nth-child(5) { animation-delay: 280ms; }
+  .stagger > *:nth-child(n+6) { animation-delay: 340ms; }
+
+  /* Scroll reveal on the public site (see useReveal); visible by default without JS */
+  [data-reveal] {
+    transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  [data-reveal="hidden"] {
+    opacity: 0;
+    transform: translateY(28px);
+  }
 
   /* ---------- Surfaces ---------- */
   .card {
-    @apply relative border border-rule bg-white;
+    @apply relative rounded-3xl bg-white shadow-soft ring-1 ring-ink/5;
   }
   .card-hover {
-    @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:border-ink;
+    @apply transition duration-300 ease-out hover:-translate-y-1 hover:shadow-lift;
+  }
+  .panel {
+    @apply rounded-3xl bg-white p-5 shadow-soft ring-1 ring-ink/5 sm:p-7;
+  }
+  .well {
+    @apply rounded-2xl bg-paper p-4;
   }
 
   /* Skeleton placeholder while data loads */
   .skeleton {
-    @apply animate-shimmer bg-paper;
-    background-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.05) 50%, transparent 100%);
+    @apply animate-shimmer rounded-3xl bg-paper;
+    background-image: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.7) 50%, transparent 100%);
     background-size: 200% 100%;
   }
 
-  /* A 1px rule along the top that draws itself in from the start edge */
+  /* Section headings: a short teal bar that grows in, no numbers or capitals */
   .section-title,
   .rule-top {
-    @apply relative pt-3;
-  }
-  .section-title::after,
-  .rule-top::after {
-    content: "";
-    @apply pointer-events-none absolute inset-x-0 top-0 h-px origin-left animate-rule-draw bg-ink;
-  }
-  [dir="rtl"] :is(.section-title, .rule-top)::after {
-    @apply origin-right;
-  }
-
-  /* Section titles are numbered: 01, 02, 03 ... (the page grid's folio numbers) */
-  .stagger {
-    counter-reset: section;
+    @apply relative;
   }
   .section-title {
-    @apply mb-4 flex items-baseline gap-3 text-sm font-semibold uppercase tracking-[0.12em] text-ink;
-    counter-increment: section;
+    @apply mb-5 flex items-center gap-3 text-xl font-semibold text-ink sm:text-2xl;
   }
   .section-title::before {
-    content: counter(section, decimal-leading-zero);
-    @apply text-sm font-semibold tabular-nums text-accent;
+    content: "";
+    @apply h-6 w-1.5 shrink-0 origin-bottom animate-rule-draw rounded-full bg-accent;
   }
+
+  /* Status pills: verified, under review, rejected */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold;
+  }
+  .pill svg {
+    @apply h-4 w-4;
+  }
+  .pill-ok { @apply pill bg-accent-tint text-accent-hover; }
+  .pill-wait { @apply pill bg-amber-tint text-amber-ink; }
+  .pill-bad { @apply pill bg-danger-tint text-danger; }
+  .pill-quiet { @apply pill bg-paper text-muted; }
 
   /* ---------- Buttons ---------- */
   .btn {
-    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 whitespace-nowrap rounded border px-4 py-2 text-sm font-semibold
-      transition duration-150 ease-out active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100;
+    @apply relative inline-flex min-h-[2.75rem] items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2 text-sm font-semibold
+      transition duration-200 ease-out active:scale-[0.96] disabled:opacity-45 disabled:active:scale-100;
   }
   .btn svg {
     @apply h-4 w-4 shrink-0;
   }
   .btn-primary {
-    @apply btn border-accent bg-accent text-white hover:border-accent-hover hover:bg-accent-hover;
+    @apply btn bg-accent text-white shadow-soft hover:-translate-y-0.5 hover:bg-accent-hover hover:shadow-lift disabled:hover:translate-y-0;
   }
   .btn-secondary {
-    @apply btn border-ink bg-white text-ink hover:bg-ink hover:text-white;
+    @apply btn bg-white text-ink ring-1 ring-ink/15 hover:bg-accent-tint hover:ring-accent/30;
   }
   .btn-ghost {
-    @apply btn border-transparent text-muted hover:text-ink hover:underline;
+    @apply btn text-muted hover:bg-paper hover:text-ink;
   }
   .btn-danger {
-    @apply btn border-transparent text-danger hover:border-danger hover:bg-danger-tint;
+    @apply btn text-danger hover:bg-danger-tint;
+  }
+  .btn-dark {
+    @apply btn bg-ink text-white hover:-translate-y-0.5 hover:bg-accent-hover;
   }
   .btn-lg {
-    @apply min-h-[3.25rem] px-6 py-3 text-base;
+    @apply min-h-[3.25rem] px-7 py-3 text-base;
   }
 
   /* ---------- Form controls ---------- */
   .field {
-    @apply block min-h-[2.75rem] w-full rounded border border-muted bg-white px-3.5 py-2.5 text-base text-ink
-      transition-colors duration-150 placeholder:text-muted
-      hover:border-ink focus:border-accent focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-accent;
+    @apply block min-h-[3rem] w-full rounded-2xl border-0 bg-white px-4 py-2.5 text-base text-ink ring-1 ring-ink/15
+      transition duration-200 placeholder:text-muted/80
+      hover:ring-ink/30 focus:outline-none focus:ring-2 focus:ring-accent focus:shadow-ring;
   }
   .field-sm {
-    @apply field min-h-[2.5rem] px-3 py-1.5 text-sm;
+    @apply field min-h-[2.5rem] rounded-xl px-3 py-1.5 text-sm;
   }
-  /* Visible label above a field in the auth forms; pulls the field closer */
   .form-label {
     @apply -mb-2 text-sm font-semibold text-ink;
   }
@@ -174,54 +203,46 @@
     @apply pe-12;
   }
   .pw-toggle {
-    @apply absolute inset-y-0 end-0 grid w-12 place-items-center text-muted transition-colors duration-150 hover:text-ink focus-visible:outline-offset-[-4px];
+    @apply absolute inset-y-0 end-0 grid w-12 place-items-center rounded-e-2xl text-muted transition-colors duration-150 hover:text-ink focus-visible:outline-offset-[-4px];
   }
   .pw-toggle svg {
     @apply h-5 w-5 animate-icon-in;
   }
-  /* Consent checkboxes: turn red (with an outline, not colour only) if skipped on submit */
   .consent {
-    @apply flex cursor-pointer items-start gap-3 text-sm leading-snug text-ink;
+    @apply flex cursor-pointer items-start gap-3 rounded-2xl text-sm leading-snug text-ink;
   }
   .consent > input {
     @apply mt-0.5;
   }
   .consent:has(:user-invalid) {
-    @apply animate-shake text-danger outline outline-2 outline-offset-4 outline-danger;
+    @apply animate-shake bg-danger-tint text-danger outline outline-2 outline-offset-4 outline-danger;
   }
   .caps-note {
     @apply mt-2 animate-alert-in text-sm font-medium text-caution;
   }
 
   .field-label {
-    @apply flex flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-muted;
+    @apply flex flex-col gap-1.5 text-sm font-semibold text-muted;
   }
-  /* the label's small-caps styling shouldn't leak into the field itself */
   .field-label > :is(input, select, textarea) {
-    @apply text-sm font-normal normal-case tracking-normal text-ink;
+    @apply text-sm font-normal text-ink;
   }
 
-  /* ---------- Inline validation (replaces the browser's popup) ----------
-     :user-invalid only matches after the person has typed or tried to submit,
-     so fields never look "wrong" before they're touched. */
+  /* ---------- Inline validation ----------
+     :user-invalid only matches after the person has typed or tried to submit. */
   :is(.field, .field-sm):user-invalid {
-    @apply animate-shake border-danger bg-danger-tint;
+    @apply animate-shake bg-danger-tint ring-2 ring-danger;
   }
-  :is(.field, .field-sm):user-invalid:focus {
-    @apply outline-danger;
-  }
-  /* correctly filled: a small check mark (shape, not colour alone) */
   .field:user-valid:not(:placeholder-shown) {
     @apply pe-10;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23067647' stroke-width='2.4' stroke-linecap='square'%3E%3Cpath d='M5 10.5l3.2 3.2L15 7'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%230F7B6C' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 10.5l3.2 3.2L15 7'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-size: 1.05rem;
-    background-position: right 0.9rem center;
+    background-position: right 0.95rem center;
   }
   [dir="rtl"] .field:user-valid:not(:placeholder-shown) {
-    background-position: left 0.9rem center;
+    background-position: left 0.95rem center;
   }
-  /* password: the check mark sits left of the eye button */
   .pw-wrap .field:user-valid:not(:placeholder-shown) {
     @apply pe-[4.75rem];
     background-position: right 3.25rem center;
@@ -229,21 +250,25 @@
   [dir="rtl"] .pw-wrap .field:user-valid:not(:placeholder-shown) {
     background-position: left 3.25rem center;
   }
+  /* Small editor fields never get the check mark: "valid alone" can still
+     break a cross-field rule. Same specificity as the rule above, and later. */
+  .field-sm:user-valid:not(:placeholder-shown) {
+    @apply pe-3;
+    background-image: none;
+  }
 
-  /* Exercise editor: invalid fields (set by the editor's own checks, which
-     also print what's wrong under the field, so no generic label is added) */
-  .field-sm[aria-invalid="true"] {
-    @apply border-danger bg-danger-tint;
+  .field-sm[aria-invalid="true"],
+  .field-sm[aria-invalid="true"]:not(:placeholder-shown) {
+    @apply bg-danger-tint ring-2 ring-danger;
   }
   .field-label:has(:user-invalid),
   .field-label:has([aria-invalid="true"]) {
     @apply text-danger;
   }
   .field-error {
-    @apply text-xs font-semibold normal-case leading-snug tracking-normal text-danger;
+    @apply text-xs font-semibold leading-snug text-danger;
   }
 
-  /* Browser autofill: keep the white field instead of Chrome's yellow/blue fill */
   :is(.field, .field-sm):-webkit-autofill,
   :is(.field, .field-sm):-webkit-autofill:hover,
   :is(.field, .field-sm):-webkit-autofill:focus {
@@ -257,30 +282,25 @@
     @apply tabular-nums;
   }
 
-  /* Hints stay collapsed (and cancel the form's gap) until needed. They open
-     after a short delay so a message appearing on blur never shifts the submit
-     button out from under a click that's in progress. Set --gap to the
-     parent's gap when it isn't gap-3.5. */
+  /* Hints stay collapsed (and cancel the form's gap) until needed. Set --gap
+     to the parent's gap when it isn't gap-3.5. */
   .field-hint {
     @apply invisible flex items-start gap-2 overflow-hidden text-sm font-medium leading-snug text-danger opacity-0;
     max-height: 0;
     margin-top: calc(-1 * var(--gap, 0.875rem));
     transition:
-      max-height 0.15s ease-out,
-      margin-top 0.15s ease-out,
-      opacity 0.15s ease-out,
-      visibility 0.15s;
+      max-height 0.2s ease-out,
+      margin-top 0.2s ease-out,
+      opacity 0.2s ease-out,
+      visibility 0.2s;
   }
   .field-hint::before {
     content: "!";
-    @apply mt-0.5 grid h-4 w-4 shrink-0 place-items-center bg-danger text-[0.625rem] font-bold leading-none text-white;
+    @apply mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-danger text-[0.625rem] font-bold leading-none text-white;
   }
-  /* empty field -> the "please fill this in" hint;
-     filled but wrong (bad email, too short) -> the "format" hint */
   .field:user-invalid:placeholder-shown + .hint-empty,
   .field:user-invalid:not(:placeholder-shown) + .hint-format,
   .field:user-invalid:not(:placeholder-shown) + .hint-empty + .hint-format,
-  /* same, for a password field wrapped with its eye button */
   .pw-wrap[data-problem="empty"] + .hint-empty,
   .pw-wrap[data-problem="format"] + .hint-format,
   .pw-wrap[data-problem="format"] + .hint-empty + .hint-format {
@@ -292,24 +312,29 @@
 
   /* ---------- Feedback ---------- */
   .alert-error {
-    @apply flex animate-alert-in items-start gap-3 border-s-4 border-danger bg-danger-tint px-4 py-3 text-sm font-medium leading-snug text-danger;
+    @apply flex animate-alert-in items-start gap-3 rounded-2xl bg-danger-tint px-4 py-3 text-sm font-medium leading-snug text-danger;
   }
   .alert-error::before {
     content: "!";
-    @apply mt-px grid h-5 w-5 shrink-0 place-items-center bg-danger text-xs font-bold leading-none text-white;
+    @apply mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full bg-danger text-xs font-bold leading-none text-white;
+  }
+  .notice {
+    @apply flex animate-alert-in items-start gap-3 rounded-2xl px-4 py-3 text-sm font-medium leading-snug;
+  }
+  .notice svg {
+    @apply mt-0.5 h-5 w-5 shrink-0;
   }
 
   .link {
-    @apply font-semibold text-accent underline decoration-1 underline-offset-4 transition-all duration-150 hover:text-accent-hover hover:decoration-2 hover:underline-offset-[6px];
+    @apply font-semibold text-accent underline decoration-accent/40 decoration-2 underline-offset-4 transition-all duration-200 hover:text-accent-hover hover:decoration-accent;
   }
 
-  /* ---------- Segmented control (Patient / Physiotherapist) ----------
-     A blue block slides under whichever option is checked. */
+  /* ---------- Segmented control (Patient / Physiotherapist) ---------- */
   .segmented {
-    @apply relative grid grid-cols-2 border border-ink p-1;
+    @apply relative grid grid-cols-2 rounded-full bg-paper p-1;
   }
   .segmented-indicator {
-    @apply pointer-events-none absolute inset-y-1 start-1 w-[calc(50%-0.25rem)] bg-accent transition-transform duration-300 ease-out;
+    @apply pointer-events-none absolute inset-y-1 start-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-soft transition-transform duration-500 ease-spring;
   }
   .segmented:has(> label:nth-of-type(2) :checked) .segmented-indicator {
     transform: translateX(100%);
@@ -318,28 +343,50 @@
     transform: translateX(-100%);
   }
   .segmented > label {
-    @apply relative z-10 flex min-h-[2.75rem] cursor-pointer items-center justify-center px-2 text-center text-sm font-semibold text-ink transition-colors duration-300
-      has-[:checked]:text-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent;
+    @apply relative z-10 flex min-h-[2.75rem] cursor-pointer items-center justify-center rounded-full px-2 text-center text-sm font-semibold text-muted transition-colors duration-300
+      has-[:checked]:text-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent;
+  }
+
+  /* ---------- Dashboard tabs: a white pill slides to the chosen tab ---------- */
+  .tabs {
+    @apply relative flex gap-1 overflow-x-auto rounded-full bg-white p-1.5 shadow-soft ring-1 ring-ink/5;
+    scrollbar-width: none;
+  }
+  .tab {
+    @apply relative z-10 inline-flex min-h-[2.5rem] shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold text-muted transition-colors duration-300 hover:text-ink;
+  }
+  .tab svg {
+    @apply h-4 w-4;
+  }
+  .tab[aria-selected="true"] {
+    @apply text-white;
+  }
+  .tab-indicator {
+    @apply pointer-events-none absolute inset-y-1.5 rounded-full bg-ink transition-all duration-500 ease-spring;
+  }
+  .tab-badge {
+    @apply grid h-5 min-w-[1.25rem] place-items-center rounded-full bg-amber px-1 text-xs font-bold text-ink;
   }
 
   /* ---------- Confirm dialog (native <dialog>) ---------- */
   .dialog {
-    @apply m-auto w-[calc(100%-2rem)] max-w-md border border-ink bg-white p-0 text-ink;
+    @apply m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl bg-white p-0 text-ink shadow-lift;
   }
   .dialog[open] {
     @apply animate-dialog-in;
   }
   .dialog::backdrop {
-    background: rgb(17 17 17 / 0.45);
+    background: rgb(20 50 58 / 0.45);
+    backdrop-filter: blur(4px);
     animation: backdrop-in 0.25s ease-out;
   }
 
   /* ---------- Data table (physio sessions) ---------- */
   .data-table {
-    @apply w-full border-collapse text-sm tabular-nums;
+    @apply w-full border-collapse overflow-hidden rounded-2xl text-sm tabular-nums;
   }
   .data-table th {
-    @apply border-b border-ink px-3 py-2.5 text-start text-xs font-semibold uppercase tracking-[0.1em] text-muted;
+    @apply bg-paper px-3 py-2.5 text-start text-xs font-semibold text-muted;
   }
   .data-table td {
     @apply border-b border-rule px-3 py-2.5 text-ink;
@@ -347,44 +394,46 @@
   .data-table tbody tr:last-child td {
     @apply border-b-0;
   }
+  .data-table tbody tr {
+    @apply transition-colors;
+  }
   .data-table tbody tr:hover td {
-    @apply bg-paper;
+    @apply bg-accent-tint/50;
   }
 
-  /* ---------- App header ---------- */
-  /* Slides away when scrolling down, comes back on any scroll up (see useHideOnScroll).
-     Never hides while something inside it has keyboard focus. */
+  /* ---------- App header: frosted, slides away on scroll down ---------- */
   .app-header {
-    @apply sticky top-0 z-20 border-b border-ink bg-white transition-transform duration-300 ease-out;
+    @apply sticky top-0 z-20 border-b border-white/60 bg-mist/80 backdrop-blur-xl transition-transform duration-500 ease-out;
   }
   .app-header[data-hidden="true"]:not(:focus-within) {
     transform: translateY(-100%);
   }
 
-  /* Keyboard users can jump straight past the header */
   .skip-link {
-    @apply sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:bg-ink focus:px-4 focus:py-2 focus:text-white;
+    @apply sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-white;
   }
 
-  /* ---------- Footer (business details + legal links) ---------- */
+  /* ---------- Footer ---------- */
   .site-footer {
-    @apply rule-top mx-auto mt-16 max-w-3xl px-4 pb-10 text-sm text-muted sm:px-6;
+    @apply mx-auto mt-20 max-w-6xl px-4 pb-10 text-sm text-muted sm:px-6;
   }
   .site-footer a {
     @apply link font-medium;
   }
 
-  /* One-time notice about browser storage (no tracking, so no consent needed) */
   .storage-notice {
-    @apply fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-2xl animate-fade-up flex-wrap items-center gap-3 border border-ink bg-white px-4 py-3 text-sm sm:inset-x-6;
+    @apply fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-2xl animate-fade-up flex-wrap items-center gap-3 rounded-3xl bg-ink px-5 py-3 text-sm text-white shadow-lift sm:inset-x-6;
+  }
+  .storage-notice a {
+    @apply font-semibold text-accent-soft underline underline-offset-4;
   }
 
-  /* ---------- Legal pages: readable long-form text ---------- */
+  /* ---------- Legal pages ---------- */
   .prose-legal {
     @apply max-w-[66ch] text-base leading-relaxed text-ink;
   }
   .prose-legal h2 {
-    @apply rule-top mb-3 mt-10 text-lg font-semibold;
+    @apply mb-3 mt-10 text-xl font-semibold;
   }
   .prose-legal p,
   .prose-legal ul {
@@ -397,54 +446,67 @@
     @apply link;
   }
   .prose-legal table {
-    @apply mb-6;
+    @apply mb-6 w-full overflow-hidden rounded-2xl bg-white text-sm shadow-soft;
+  }
+  .prose-legal th {
+    @apply bg-paper px-3 py-2 text-start font-semibold;
+  }
+  .prose-legal td {
+    @apply border-t border-rule px-3 py-2;
   }
   .placeholder {
-    @apply bg-caution-tint px-1 font-semibold text-caution;
+    @apply rounded bg-caution-tint px-1 font-semibold text-caution;
   }
 
-  /* ---------- Auth pages ---------- */
-  .auth-card {
-    @apply mx-auto mt-[8vh] w-full max-w-md animate-fade-up border-t-4 border-accent bg-white px-6 pb-10 pt-8 sm:border sm:border-t-4 sm:border-rule sm:border-t-accent sm:px-10;
+  /* ---------- Auth pages: form card beside a petrol panel with the arc ---------- */
+  .auth-shell {
+    @apply mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_1.05fr];
   }
-  /* RehabVision brand lockup (logo + name), drawn in CSS */
+  .auth-card {
+    @apply w-full max-w-md animate-fade-up justify-self-center rounded-3xl bg-white px-6 pb-10 pt-8 shadow-lift ring-1 ring-ink/5 sm:px-10;
+  }
   .auth-card > h1::before {
     content: "RehabVision";
-    @apply mb-10 flex h-12 items-center ps-[3.75rem] text-lg font-semibold tracking-tight text-ink;
+    @apply mb-8 flex h-12 items-center ps-[3.75rem] text-lg font-semibold tracking-tight text-ink;
     background: url("/logo-mark.png") left center / 3rem 3rem no-repeat;
   }
   [dir="rtl"] .auth-card > h1::before {
     background-position: right center;
   }
+  .auth-art {
+    @apply relative hidden overflow-hidden rounded-[2.5rem] bg-ink p-10 text-white lg:block;
+  }
 
-  /* ---------- Exercise coach: camera frame with square corner marks ---------- */
+  /* ---------- Document capture tiles ---------- */
+  .doc-tile {
+    @apply relative flex flex-col gap-3 rounded-3xl bg-white p-4 ring-1 ring-ink/10 transition duration-300;
+  }
+  .doc-tile[data-state="done"] {
+    @apply bg-accent-tint/40 ring-accent/30;
+  }
+  .doc-thumb {
+    @apply relative grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-2xl bg-paper text-muted;
+  }
+  .doc-thumb img {
+    @apply h-full w-full animate-fade-in object-cover;
+  }
+
+  /* ---------- Exercise coach: camera frame with rounded corner marks ---------- */
   .hud-frame::before {
     content: "";
-    @apply pointer-events-none absolute inset-3 z-10;
-    background:
-      linear-gradient(#fff, #fff) top left / 22px 2px,
-      linear-gradient(#fff, #fff) top left / 2px 22px,
-      linear-gradient(#fff, #fff) top right / 22px 2px,
-      linear-gradient(#fff, #fff) top right / 2px 22px,
-      linear-gradient(#fff, #fff) bottom left / 22px 2px,
-      linear-gradient(#fff, #fff) bottom left / 2px 22px,
-      linear-gradient(#fff, #fff) bottom right / 22px 2px,
-      linear-gradient(#fff, #fff) bottom right / 2px 22px;
-    background-repeat: no-repeat;
+    @apply pointer-events-none absolute inset-3 z-10 rounded-2xl;
+    box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.55);
   }
 
-  /* ---------- Coach readout: big numerals in a ruled 3-cell grid ---------- */
+  /* ---------- Coach readout: big numerals in three soft cells ---------- */
   .readout {
-    @apply grid grid-cols-3 border border-ink;
+    @apply grid grid-cols-3 gap-2;
   }
   .readout > div {
-    @apply flex flex-col gap-1 px-3 py-3 sm:px-5 sm:py-4;
-  }
-  .readout > div + div {
-    @apply border-s border-ink;
+    @apply flex flex-col gap-1 rounded-2xl bg-white px-3 py-3 shadow-soft sm:px-5 sm:py-4;
   }
   .readout dt {
-    @apply text-xs font-semibold uppercase tracking-[0.1em] text-muted;
+    @apply text-xs font-semibold text-muted;
   }
   .readout dd {
     @apply text-3xl font-semibold leading-none tabular-nums text-ink sm:text-5xl;
@@ -463,7 +525,7 @@
   details::details-content {
     block-size: 0;
     overflow: hidden;
-    transition: block-size 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), content-visibility 0.3s allow-discrete;
+    transition: block-size 0.35s cubic-bezier(0.22, 1, 0.36, 1), content-visibility 0.35s allow-discrete;
   }
   details[open]::details-content {
     block-size: auto;
@@ -471,9 +533,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  [data-reveal="hidden"] {
+    opacity: 1;
+    transform: none;
   }
 }

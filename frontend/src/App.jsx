@@ -1,6 +1,6 @@
 // =============================================================================
 // App.jsx — decides which page to show for each URL.
-//   /          -> the patient or physio home page (must be logged in)
+//   /          -> logged in: the patient or physio home page; visitors: the public website
 //   /login     -> log in
 //   /register  -> create an account
 //   /forgot-password -> ask for a password reset email
@@ -15,6 +15,7 @@ import { useAuth } from './auth/authContext'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import HomePage from './pages/HomePage'
+import LandingPage from './pages/LandingPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import StorageNotice from './components/StorageNotice'
@@ -55,7 +56,7 @@ const App = () => {
     <>
       <Suspense fallback={null}>
       <Routes>
-        <Route path="/" element={user ? <HomePage /> : <Navigate to="/login" replace />} />
+        <Route path="/" element={user ? <HomePage /> : <LandingPage />} />
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
         <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterPage />} />
         <Route path="/forgot-password" element={user ? <Navigate to="/" replace /> : <ForgotPasswordPage />} />

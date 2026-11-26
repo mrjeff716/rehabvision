@@ -152,6 +152,7 @@ router.get('/patients/:id/sessions', async (req, res, next) => {
 // Patients who need attention in the last 7 days. A patient is flagged if:
 //   - fewer than 50% of their reps reached the target, or
 //   - they did fewer than 3 sessions (including none at all)
+//   - they rated pain 7/10 or more, or reported an incident
 // Worst first.
 router.get('/flags', async (req, res, next) => {
   try {
@@ -160,7 +161,7 @@ router.get('/flags', async (req, res, next) => {
     const sessions = await Session.find({
       patient: { $in: patients.map((p) => p._id) },
       performedAt: { $gte: since },
-    }).select('patient totalReps goodReps performedAt')
+    }).select('patient totalReps goodReps performedAt painScore incident')
 
     const flagged = []
     for (const p of patients) {
@@ -170,16 +171,22 @@ router.get('/flags', async (req, res, next) => {
       const quality = total > 0 ? good / total : 0
       const lastSeen = mine.reduce((latest, s) => (!latest || s.performedAt > latest ? s.performedAt : latest), null)
 
+      const maxPain = mine.reduce((m, s) => Math.max(m, s.painScore ?? 0), 0)
+      const incidents = mine.filter((s) => s.incident).map((s) => s.incident)
+
       const reasons = []
       if (mine.length < 3) reasons.push(`only ${mine.length} session(s) this week`)
       if (total > 0 && quality < 0.5) reasons.push(`only ${Math.round(quality * 100)}% of reps reached the target`)
       if (mine.length > 0 && total === 0) reasons.push('sessions had no completed reps')
+      if (maxPain >= 7) reasons.push(`pain rated ${maxPain}/10`)
+      if (incidents.length) reasons.push(`reported: ${incidents.join(' | ')}`)
 
       if (reasons.length) {
-        flagged.push({ patientId: p._id, name: p.name, sessions: mine.length, total, good, quality, lastSeen, reasons })
+        flagged.push({ patientId: p._id, name: p.name, sessions: mine.length, total, good, quality, lastSeen, maxPain, incidents, reasons })
       }
     }
-    flagged.sort((a, b) => a.quality - b.quality)
+    // Safety first: incidents and high pain, then lowest quality
+    flagged.sort((a, b) => (b.incidents.length > 0) - (a.incidents.length > 0) || b.maxPain - a.maxPain || a.quality - b.quality)
     res.json({ flagged })
   } catch (e) {
     next(e)

@@ -27,17 +27,16 @@ createRoot(document.getElementById('root')).render(
           position="top-center"
           toastOptions={{
             style: {
-              borderRadius: '2px',
-              padding: '12px 16px',
+              borderRadius: '9999px',
+              padding: '10px 18px',
               fontSize: '16px',
               fontWeight: 500,
-              color: '#111111',
-              background: '#ffffff',
-              border: '1px solid #111111',
-              boxShadow: 'none',
+              color: '#ffffff',
+              background: '#14323A',
+              boxShadow: '0 22px 48px -20px rgb(20 50 58 / 0.55)',
             },
-            success: { iconTheme: { primary: '#067647', secondary: '#ffffff' } },
-            error: { iconTheme: { primary: '#B42318', secondary: '#ffffff' } },
+            success: { iconTheme: { primary: '#A8DCCF', secondary: '#14323A' } },
+            error: { iconTheme: { primary: '#F28B8F', secondary: '#14323A' } },
           }}
         />
       </AuthProvider>
