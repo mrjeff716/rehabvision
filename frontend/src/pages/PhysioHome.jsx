@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { Check, Copy, LoaderCircle, Plus, RefreshCw } from 'lucide-react'
+import { Check, Copy, Dumbbell, History, IdCard, LoaderCircle, Pencil, Plus, RefreshCw, Search, ShieldCheck, Trash2, TriangleAlert, Users, X } from 'lucide-react'
 import useConfirm from '../components/useConfirm'
 import { useAuth } from '../auth/authContext'
 import { api } from '../api'
@@ -23,6 +23,7 @@ const PhysioHome = () => {
   const [error, setError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [query, setQuery] = useState('')
 
   // Expired login -> back to the login page; anything else -> show the message
   const handleError = useCallback((e) => (e.status === 401 ? logout() : setError(e.message)), [logout])
@@ -64,70 +65,120 @@ const PhysioHome = () => {
     }
   }
 
+  const firstName = user.name?.trim().split(/\s+/)[0] ?? ''
+  const q = query.trim().toLowerCase()
+  const shownPatients = (patients ?? []).filter((p) =>
+    !q || p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q))
+  const assigned = (patients ?? []).reduce((n, p) => n + (p.exercises?.length ?? 0), 0)
+
   return (
     <div className="stagger flex flex-col gap-8">
-      <section className="rule-top pb-2 pt-6 text-ink">
-        <p className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
-          Your public ID
-          <code className="text-4xl normal-case tracking-[0.04em] text-ink sm:text-6xl">{user.publicId}</code>
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-4">
-          <button className="btn-secondary" onClick={copyId}>
-            {copied ? <Check key="done" aria-hidden className="animate-icon-in text-success" /> : <Copy key="copy" aria-hidden className="animate-icon-in" />}
-            {copied ? 'Copied' : 'Copy ID'}
-          </button>
-          <p className="text-sm text-muted">Give this ID to your patients so they can add you.</p>
+      <div>
+        <h2 className="text-3xl font-bold">Hello, {firstName}</h2>
+        <p className="mt-1 text-muted">Here is how your patients are doing.</p>
+      </div>
+
+      {/* At-a-glance numbers */}
+      <dl className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+        <div className="stat">
+          <span className="icon-chip" aria-hidden><Users /></span>
+          <div><dd>{patients?.length ?? '–'}</dd><dt>Patients</dt></div>
         </div>
+        <div className="stat">
+          <span className={`icon-chip ${flags?.length ? 'bg-caution-tint text-caution' : ''}`} aria-hidden><TriangleAlert /></span>
+          <div><dd>{flags?.length ?? '–'}</dd><dt>Need attention</dt></div>
+        </div>
+        <div className="stat">
+          <span className="icon-chip" aria-hidden><Dumbbell /></span>
+          <div><dd>{patients ? assigned : '–'}</dd><dt>Exercises assigned</dt></div>
+        </div>
+      </dl>
+
+      {/* Public ID to share with patients */}
+      <section className="card flex flex-wrap items-center gap-4 p-5 sm:p-6">
+        <span className="icon-chip h-12 w-12" aria-hidden><IdCard /></span>
+        <p className="me-auto flex flex-col gap-0.5 text-sm text-muted">
+          Your public ID
+          <code className="text-3xl font-bold tracking-wider text-ink sm:text-4xl">{user.publicId}</code>
+          <span>Give this ID to your patients so they can add you.</span>
+        </p>
+        <button className="btn-primary" onClick={copyId}>
+          {copied ? <Check key="done" aria-hidden className="animate-icon-in" /> : <Copy key="copy" aria-hidden className="animate-icon-in" />}
+          {copied ? 'Copied' : 'Copy ID'}
+        </button>
         <p className="sr-only" role="status">{copied ? 'ID copied to clipboard' : ''}</p>
       </section>
 
       {error && <p role="alert" className="alert-error">{error}</p>}
 
+      {/* Most actionable first: who needs a look this week */}
       <section>
-        <div className="rule-top mb-4 flex items-center justify-between gap-3 pt-1">
-          <h2 className="section-title mb-0 pt-0 after:hidden">My patients</h2>
-          <button className="btn-secondary" onClick={refresh} disabled={refreshing}>
-            <RefreshCw aria-hidden className={refreshing ? 'animate-spin' : ''} /> Refresh list
-          </button>
-        </div>
-        {patients === null ? (
-          <div className="flex flex-col gap-4" aria-busy="true" aria-label="Loading patients">
-            <div className="skeleton h-40 border border-rule" />
-            <div className="skeleton h-40 border border-rule" />
-          </div>
-        ) : patients.length === 0 ? (
-          <p className="card border-dashed px-5 py-8 text-center text-sm text-muted">No patients yet. They will appear here after they add your ID.</p>
-        ) : (
-          <ul className="stagger flex flex-col gap-4">
-            {patients.map((p) => (
-              <PatientCard key={p._id} patient={p} catalog={catalog} onChanged={load} onError={handleError} />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section>
-        <h2 className="section-title">Needs attention (last 7 days)</h2>
+        <h2 className="section-title"><TriangleAlert aria-hidden />Needs attention <span className="text-sm font-medium text-muted">(last 7 days)</span></h2>
         {flags === null ? (
-          <div className="skeleton h-12" aria-busy="true" aria-label="Loading" />
+          <div className="skeleton h-14" aria-busy="true" aria-label="Loading" />
         ) : flags.length === 0 ? (
-          <p className="text-sm text-muted">No patients flagged.</p>
+          <p className="flex items-center gap-2.5 rounded-2xl bg-success-tint px-4 py-3 text-sm font-medium text-success">
+            <Check aria-hidden className="h-4 w-4" /> All good: no patients flagged this week.
+          </p>
         ) : (
           <ul className="flex flex-col gap-2">
             {flags.map((f) => (
-              <li key={f.patientId} className="animate-alert-in border-s-4 border-caution bg-caution-tint px-4 py-2.5 text-sm text-caution">
-                <b>{f.name}</b>: {f.reasons.join('; ')}
-                {f.lastSeen && ` (last session ${new Date(f.lastSeen).toLocaleDateString()})`}
+              <li key={f.patientId} className="flex animate-alert-in items-start gap-3 rounded-2xl border border-caution/20 bg-caution-tint px-4 py-3 text-sm text-caution">
+                <TriangleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  <b>{f.name}</b>: {f.reasons.join('; ')}
+                  {f.lastSeen && <span className="opacity-80">{` (last session ${new Date(f.lastSeen).toLocaleDateString()})`}</span>}
+                </span>
               </li>
             ))}
           </ul>
         )}
       </section>
 
+      <section>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="section-title mb-0"><Users aria-hidden />My patients</h2>
+          <button className="btn-ghost" onClick={refresh} disabled={refreshing}>
+            <RefreshCw aria-hidden className={refreshing ? 'animate-spin' : ''} /> Refresh
+          </button>
+        </div>
+        {patients?.length > 3 && (
+          <label className="relative mb-4 block">
+            <span className="sr-only">Search patients</span>
+            <Search aria-hidden className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <input className="field ps-10" type="search" placeholder="Search by name or email"
+              value={query} onChange={(e) => setQuery(e.target.value)} />
+          </label>
+        )}
+        {patients === null ? (
+          <div className="flex flex-col gap-4" aria-busy="true" aria-label="Loading patients">
+            <div className="skeleton h-40" />
+            <div className="skeleton h-40" />
+          </div>
+        ) : patients.length === 0 ? (
+          <div className="empty-state">
+            <Users aria-hidden />
+            <p className="font-semibold text-ink">No patients yet</p>
+            <p>Share your public ID above. Patients appear here as soon as they add it.</p>
+          </div>
+        ) : shownPatients.length === 0 ? (
+          <p className="empty-state"><Search aria-hidden />No patients match “{query}”.</p>
+        ) : (
+          <ul className="stagger flex flex-col gap-4">
+            {shownPatients.map((p) => (
+              <PatientCard key={p._id} patient={p} catalog={catalog} onChanged={load} onError={handleError} />
+            ))}
+          </ul>
+        )}
+      </section>
+
       {catalog && (
-        <section className="text-sm leading-relaxed text-muted">
-          <p><b>Safety:</b> {catalog.safety_note}</p>
-          <p className="mt-1"><b>Measurement:</b> {catalog.measurement_note}</p>
+        <section className="flex gap-3 rounded-2xl bg-white/60 p-4 text-sm leading-relaxed text-muted ring-1 ring-inset ring-rule">
+          <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+          <div>
+            <p><b className="text-ink">Safety:</b> {catalog.safety_note}</p>
+            <p className="mt-1"><b className="text-ink">Measurement:</b> {catalog.measurement_note}</p>
+          </div>
         </section>
       )}
     </div>
@@ -173,31 +224,41 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
 
   const exercises = patient.exercises ?? []
 
+  const initials = patient.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
+
   return (
-    <li className="card card-hover p-5 sm:p-6">
-      <div className="text-lg font-bold text-ink">{patient.name} <span className="text-sm font-medium text-muted">({patient.email})</span></div>
+    <li className="card p-5 sm:p-6">
+      <div className="flex items-center gap-3">
+        <span aria-hidden className="avatar h-11 w-11 text-base">{initials || '?'}</span>
+        <div className="min-w-0 leading-tight">
+          <h3 className="truncate text-lg font-bold">{patient.name}</h3>
+          <p className="truncate text-sm text-muted">{patient.email}</p>
+        </div>
+      </div>
       {exercises.length === 0 ? (
-        <p className="mt-2 text-sm text-muted">No exercises assigned.</p>
+        <p className="mt-4 rounded-xl bg-paper px-4 py-3 text-sm text-muted">No exercises assigned yet. Use “Edit exercises” to add up to {MAX_EXERCISES}.</p>
       ) : (
-        <ul className="mt-3 flex flex-col gap-1.5 text-sm text-ink">
+        <ul className="mt-4 flex flex-col gap-2 text-sm text-ink">
           {exercises.map((a) => (
-            <li key={a._id} className="rounded-lg bg-paper px-3 py-2">
-              {nameOf(a.exerciseId)} ({a.side}): {a.reps} reps, {a.startAngle}° → {a.targetAngle}°,
-              safe range {a.permittedMin}°–{a.permittedMax}°
+            <li key={a._id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl bg-paper px-4 py-2.5">
+              <span className="me-auto font-semibold">{nameOf(a.exerciseId)} <span className="font-normal capitalize text-muted">· {a.side}</span></span>
+              <span className="chip bg-white">{a.reps} reps</span>
+              <span className="chip bg-white">{a.startAngle}° → {a.targetAngle}°</span>
+              <span className="chip bg-success-tint text-success">safe {a.permittedMin}°–{a.permittedMax}°</span>
             </li>
           ))}
         </ul>
       )}
 
       <div className="mt-4 flex flex-wrap gap-2 border-t border-rule pt-4">
-        <button className="btn-secondary" onClick={() => setEditing(!editing)} disabled={!catalog} aria-expanded={editing}>
-          {editing ? 'Close editor' : 'Edit exercises'}
+        <button className={editing ? 'btn-secondary' : 'btn-primary'} onClick={() => setEditing(!editing)} disabled={!catalog} aria-expanded={editing}>
+          {editing ? <X aria-hidden /> : <Pencil aria-hidden />} {editing ? 'Close editor' : 'Edit exercises'}
         </button>
         <button className="btn-secondary" onClick={toggleSessions} aria-expanded={Boolean(sessions)} disabled={loadingSessions}>
-          {loadingSessions && <LoaderCircle aria-hidden className="animate-spin" />}
-          {sessions ? 'Hide sessions' : 'Show sessions'}
+          {loadingSessions ? <LoaderCircle aria-hidden className="animate-spin" /> : <History aria-hidden />}
+          {sessions ? 'Hide sessions' : 'Sessions'}
         </button>
-        <button className="btn-danger ms-auto" onClick={remove}>Remove patient</button>
+        <button className="btn-danger ms-auto" onClick={remove}><Trash2 aria-hidden /> Remove</button>
       </div>
 
       {editing && catalog && (
@@ -210,23 +271,29 @@ function PatientCard({ patient, catalog, onChanged, onError }) {
       )}
 
       {sessions && (
-        sessions.length === 0 ? <p className="mt-4 animate-fade-up text-sm text-muted">No sessions yet.</p> : (
-          <table className="data-table mt-4 block animate-fade-up overflow-x-auto border border-rule sm:table">
-            <thead>
-              <tr><th>Date</th><th>Exercise</th><th>Side</th><th>Good / total reps</th><th>Target</th></tr>
-            </thead>
-            <tbody>
-              {sessions.map((s) => (
-                <tr key={s._id}>
-                  <td>{new Date(s.performedAt).toLocaleString()}</td>
-                  <td>{nameOf(s.exerciseId)}</td>
-                  <td>{s.side}</td>
-                  <td>{s.goodReps} / {s.totalReps}</td>
-                  <td>{s.plan?.targetAngle}°</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        sessions.length === 0 ? <p className="mt-4 animate-fade-up rounded-xl bg-paper px-4 py-3 text-sm text-muted">No sessions yet.</p> : (
+          <div className="mt-4 animate-fade-up overflow-x-auto rounded-xl border border-rule">
+            <table className="data-table">
+              <thead>
+                <tr><th>Date</th><th>Exercise</th><th>Side</th><th>Good reps</th><th>Target</th></tr>
+              </thead>
+              <tbody>
+                {sessions.map((s) => {
+                  const ratio = s.totalReps ? s.goodReps / s.totalReps : 0
+                  const tone = ratio >= 0.8 ? 'bg-success-tint text-success' : ratio >= 0.5 ? 'bg-caution-tint text-caution' : 'bg-danger-tint text-danger'
+                  return (
+                    <tr key={s._id}>
+                      <td className="whitespace-nowrap">{new Date(s.performedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</td>
+                      <td>{nameOf(s.exerciseId)}</td>
+                      <td className="capitalize">{s.side}</td>
+                      <td><span className={`chip ${tone}`}>{s.goodReps} / {s.totalReps}</span></td>
+                      <td>{s.plan?.targetAngle}°</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )
       )}
       {confirmDialog}
@@ -357,13 +424,13 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
   )
 
   return (
-    <div className="mt-4 animate-fade-up border-t border-ink bg-paper p-4 sm:p-5">
+    <div className="mt-4 animate-fade-up rounded-2xl bg-paper p-4 sm:p-5">
       <p className="mb-4 text-xs leading-relaxed text-muted">
         Angles in degrees, 0° = neutral (e.g. straight knee). Defaults are healthy reference values,
         not a prescription — set them for this patient. Max {MAX_EXERCISES} exercises.
       </p>
       {rows.map((r, i) => (
-        <div key={i} className="mb-4 flex animate-fade-up flex-col gap-3 border border-rule bg-white p-4">
+        <div key={i} className="mb-4 flex animate-fade-up flex-col gap-3 rounded-xl border border-rule bg-white p-4 shadow-card">
           <div className="flex flex-wrap items-end gap-3">
             <label className="field-label">
               Exercise
@@ -385,11 +452,11 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
             {numberField(i, 'permittedMax', 'Safe max °')}
             {numberField(i, 'reps', 'Reps', { min: 1, max: 100, width: 'w-20' })}
             <button className="btn-danger ms-auto"
-              onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove exercise</button>
+              onClick={() => setRows(rows.filter((_, j) => j !== i))}><Trash2 aria-hidden /> Remove</button>
           </div>
           <label className="field-label">
             Stop if (pain / symptoms)
-            <input className="field-sm normal-case tracking-normal" maxLength={500} value={r.stopCriteria}
+            <input className="field-sm" maxLength={500} value={r.stopCriteria}
               placeholder="e.g. sharp pain, swelling, pain above 5/10" {...invalidProps(i, 'stopCriteria')}
               onChange={(e) => updateRow(i, { stopCriteria: e.target.value })} />
             {fieldError(i, 'stopCriteria')}
@@ -403,12 +470,12 @@ function AssignmentEditor({ patient, catalog, onSaved, onError }) {
         </div>
       ))}
       {error && <p role="alert" className="alert-error mb-3">{error}</p>}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button className="btn-secondary" onClick={addRow} disabled={rows.length >= MAX_EXERCISES}>
           <Plus aria-hidden /> Add exercise
         </button>
         <button className="btn-primary" onClick={save} disabled={busy}>
-          {busy && <LoaderCircle aria-hidden className="animate-spin" />} Save exercises
+          {busy ? <LoaderCircle aria-hidden className="animate-spin" /> : <Check aria-hidden />} Save exercises
         </button>
       </div>
     </div>

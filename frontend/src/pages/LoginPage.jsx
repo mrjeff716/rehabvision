@@ -31,7 +31,8 @@ const LoginPage = () => {
   return (
     <>
     <main className="auth-card">
-      <h1 className="mb-7 text-3xl font-semibold">Log in</h1>
+      <h1 className="mb-7 text-3xl font-bold">Welcome back</h1>
+      <p className="auth-lead">Log in to see your exercises and patients.</p>
       <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
         {/* invalid fields show the styled hints below instead of the browser's popup */}
         <label className="form-label" htmlFor="login-email">Email</label>

@@ -9,14 +9,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { LoaderCircle, Play } from 'lucide-react'
+import { Check, Dumbbell, LoaderCircle, Play, Search, ShieldCheck, Stethoscope, TriangleAlert, X } from 'lucide-react'
 import useConfirm from '../components/useConfirm'
 import { useAuth } from '../auth/authContext'
 import { api, saveSession, flushPendingSessions } from '../api'
 import ExerciseCoach from '../pose/ExerciseCoach'
-import { LANGUAGES, getStrings } from '../i18n/messages'
+import { getStrings } from '../i18n/messages'
 
-const PatientHome = ({ lang, onLangChange }) => {
+const PatientHome = ({ lang }) => {
   const { user, setUser, refresh, logout } = useAuth()
   const [catalog, setCatalog] = useState(null) // exercise instructions
   const [active, setActive] = useState(null)   // the exercise being done now
@@ -41,6 +41,9 @@ const PatientHome = ({ lang, onLangChange }) => {
       if (n) toast.success(tRef.current.ui.sentLater(n))
     })
   }, [user._id, refresh, logout])
+
+  // Opening or closing an exercise swaps the whole page, so start at the top
+  useEffect(() => { window.scrollTo(0, 0) }, [active])
 
   // Step 1 of linking: find the physio and show their name
   const findPhysio = async (e) => {
@@ -121,77 +124,92 @@ const PatientHome = ({ lang, onLangChange }) => {
   const exercises = user.exercises ?? []
   const catalogById = Object.fromEntries((catalog?.exercises ?? []).map((ex) => [ex.id, ex]))
 
+  const firstName = user.name?.trim().split(/\s+/)[0] ?? ''
+
   return (
-    <div className="stagger flex flex-col gap-6">
-      {/* Language for the exercise coach (spoken + on-screen feedback) */}
-      <label className="flex items-center gap-3 self-end text-sm font-medium text-ink">
-        <span>{t.ui.language}</span>
-        <select value={lang} onChange={(e) => onLangChange(e.target.value)} className="field-sm w-auto cursor-pointer">
-          {Object.entries(LANGUAGES).map(([code, l]) => (
-            <option key={code} value={code}>{l.name}</option>
-          ))}
-        </select>
-      </label>
+    <div className="stagger flex flex-col gap-8">
+      <div>
+        <h2 className="text-3xl font-bold">{t.ui.hello(firstName)}</h2>
+        <p className="mt-1 text-muted">{user.physio && exercises.length ? t.ui.introReady : t.ui.introSetup}</p>
+      </div>
 
       {error && <p role="alert" className="alert-error">{error}</p>}
 
-      {/* --- Physiotherapist --- */}
+      {/* --- Step 1: physiotherapist --- */}
       <section>
-        <h2 className="section-title">{t.ui.myPhysio}</h2>
+        <h2 className="section-title">
+          <span className="step-num" data-done={Boolean(user.physio)} aria-hidden>{user.physio ? <Check className="h-4 w-4" /> : 1}</span>
+          {t.ui.myPhysio}
+        </h2>
         {user.physio ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-accent-tint px-4 py-3">
-            <span className="font-semibold text-ink">{user.physio.name} <code className="ms-1 text-sm font-medium text-accent">({user.physio.publicId})</code></span>
-            <button className="btn-danger" onClick={unlinkPhysio}>{t.ui.remove}</button>
+          <div className="card flex flex-wrap items-center gap-3 p-4 sm:p-5">
+            <span className="icon-chip" aria-hidden><Stethoscope /></span>
+            <span className="me-auto flex flex-col leading-tight">
+              <span className="font-semibold text-ink">{user.physio.name}</span>
+              <code className="text-sm text-muted">{user.physio.publicId}</code>
+            </span>
+            <button className="btn-danger" onClick={unlinkPhysio}><X aria-hidden /> {t.ui.remove}</button>
           </div>
         ) : (
-          <>
-            <label htmlFor="physio-id" className="mb-3 block text-sm text-muted">{t.ui.askForId}</label>
+          <div className="card p-5 sm:p-6">
+            <label htmlFor="physio-id" className="mb-3 block text-ink">{t.ui.askForId}</label>
             <form onSubmit={findPhysio} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="flex flex-wrap gap-2">
               {/* invalid fields show the styled hints below instead of the browser's popup */}
-              <input id="physio-id" className="field min-w-0 max-w-xs flex-1 font-mono uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal" placeholder="PT-XXXXXX" value={lookupId}
-                onChange={(e) => setLookupId(e.target.value)} required />
+              <input id="physio-id" className="field min-w-0 flex-1 font-mono text-lg uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal sm:max-w-xs" placeholder="PT-XXXXXX" value={lookupId}
+                onChange={(e) => setLookupId(e.target.value)} required autoComplete="off" spellCheck={false} />
               <p className="field-hint hint-empty order-last basis-full [--gap:0.5rem]">{t.ui.idHint}</p>
-              <button className="btn-primary" disabled={busy}>
-                {busy && !found ? <LoaderCircle aria-hidden className="animate-spin" /> : null} {t.ui.find}
+              <button className="btn-primary btn-lg" disabled={busy}>
+                {busy && !found ? <LoaderCircle aria-hidden className="animate-spin" /> : <Search aria-hidden />} {t.ui.find}
               </button>
             </form>
             {found && (
-              <div role="status" className="mt-4 flex animate-alert-in flex-wrap items-center gap-3 rounded-xl border border-accent bg-accent-tint px-4 py-3 text-sm">
-                <span className="me-auto text-ink">{t.ui.isThisYourPhysio} <b>{found.name}</b> ({found.publicId})</span>
+              <div role="status" className="mt-4 flex animate-alert-in flex-wrap items-center gap-3 rounded-xl border border-accent/30 bg-accent-tint px-4 py-3">
+                <span className="icon-chip bg-white" aria-hidden><Stethoscope /></span>
+                <span className="me-auto text-ink">{t.ui.isThisYourPhysio} <b>{found.name}</b> <span className="text-muted">({found.publicId})</span></span>
                 <button className="btn-primary" onClick={linkPhysio} disabled={busy}>
-                  {t.ui.yesAdd}
+                  <Check aria-hidden /> {t.ui.yesAdd}
                 </button>
                 <button className="btn-secondary" onClick={() => setFound(null)}>{t.ui.no}</button>
               </div>
             )}
-          </>
+          </div>
         )}
       </section>
 
-      {/* --- Exercises --- */}
+      {/* --- Step 2: exercises --- */}
       <section>
-        <h2 className="section-title">{t.ui.myExercises}</h2>
+        <h2 className="section-title">
+          <span className="step-num" aria-hidden>2</span>
+          {t.ui.myExercises}
+        </h2>
         {!user.physio ? (
-          <p className="card border-dashed px-5 py-8 text-center text-sm text-muted">{t.ui.addPhysioFirst}</p>
+          <p className="empty-state"><Stethoscope aria-hidden />{t.ui.addPhysioFirst}</p>
         ) : exercises.length === 0 ? (
-          <p className="card border-dashed px-5 py-8 text-center text-sm text-muted">{t.ui.noExercisesYet}</p>
+          <p className="empty-state"><Dumbbell aria-hidden />{t.ui.noExercisesYet}</p>
         ) : (
-          <>
-          <p className="mb-4 text-sm text-muted">The camera image stays on your device. Only angles and repetition counts are saved.</p>
           <ul className="stagger flex flex-col gap-4">
             {exercises.map((a) => {
               const info = catalogById[a.exerciseId]
               // translated instructions if we have them, else the catalog's English
               const how = t.howTo[a.exerciseId] ?? (info && { setup: info.setup, form: info.ideal_form, camera: info.measurement.preferred_camera_view })
               return (
-                <li key={a._id} className="card card-hover flex flex-col gap-2 p-5 sm:p-6">
-                  <div className="text-lg font-bold text-ink">
-                    {t.exercises[a.exerciseId] ?? a.exerciseId} · {t.ui[a.side]}
+                <li key={a._id} className="card flex flex-col gap-4 p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <span className="icon-chip h-11 w-11" aria-hidden><Dumbbell /></span>
+                    <div className="flex flex-col gap-2">
+                      <h3 className="text-lg font-bold leading-snug">{t.exercises[a.exerciseId] ?? a.exerciseId}</h3>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="chip bg-accent-tint text-accent">{t.ui[a.side]}</span>
+                        <span className="chip">{t.ui.plan(a.reps, a.startAngle, a.targetAngle)}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm font-medium text-ink">{t.ui.plan(a.reps, a.startAngle, a.targetAngle)}</div>
-                  <div className="rounded-lg border-s-4 border-danger bg-danger-tint px-3 py-2 text-sm font-medium text-danger">{t.ui.stopIf} <bdi>{a.stopCriteria}</bdi></div>
+                  <p className="flex items-start gap-2.5 rounded-xl bg-danger-tint px-4 py-3 text-sm font-medium text-danger">
+                    <TriangleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{t.ui.stopIf} <bdi>{a.stopCriteria}</bdi></span>
+                  </p>
                   {how && (
-                    <details className="mt-1 rounded-xl bg-paper px-4 py-3 text-sm text-ink [&[open]>summary]:mb-2 [&>p]:leading-relaxed">
+                    <details className="rounded-xl bg-paper px-4 py-3 text-sm text-ink [&[open]>summary]:mb-2 [&>p]:leading-relaxed">
                       <summary>{t.ui.howTo}</summary>
                       <p>{how.setup}</p>
                       <ul className="my-2 list-disc space-y-1 ps-5 marker:text-accent">
@@ -200,19 +218,22 @@ const PatientHome = ({ lang, onLangChange }) => {
                       <p className="text-xs font-medium text-muted">{t.ui.camera} {how.camera}</p>
                     </details>
                   )}
-                  <button className="btn-primary btn-lg mt-2 self-start" onClick={() => setActive(a)}>
-                    <Play aria-hidden /> {t.ui.start}
+                  <button className="btn-primary btn-lg w-full sm:w-auto sm:self-start" onClick={() => setActive(a)}>
+                    <Play aria-hidden className="rtl:-scale-x-100" /> {t.ui.start}
                   </button>
                 </li>
               )
             })}
           </ul>
-          </>
         )}
       </section>
 
+      <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted">
+        <p className="flex items-start gap-2.5"><ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-success" />{t.ui.privacyNote}</p>
+        {(t.safetyNote ?? catalog?.safety_note) && <p>{t.safetyNote ?? catalog.safety_note}</p>}
+      </div>
+
       {confirmDialog}
-      {(t.safetyNote ?? catalog?.safety_note) && <p className="text-sm leading-relaxed text-muted">{t.safetyNote ?? catalog.safety_note}</p>}
     </div>
   )
 }

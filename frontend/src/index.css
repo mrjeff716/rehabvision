@@ -4,8 +4,9 @@
 
 /* =============================================================================
    Design layer: visual styling only, no behaviour.
-   Theme: Swiss. White surface, one sans family, 1px rules instead of shadows,
-   square corners, a single accent (Yves Klein Blue), numerals as composition.
+   Theme: calm and friendly. Soft grey page, white rounded cards with gentle
+   shadows, one blue accent, large readable text and big touch targets
+   (patients are often older or in pain).
    ============================================================================= */
 
 @layer base {
@@ -21,12 +22,12 @@
   }
 
   body {
-    @apply min-h-screen bg-white font-sans leading-relaxed text-ink antialiased;
+    @apply min-h-screen bg-paper font-sans leading-relaxed text-ink antialiased;
     font-feature-settings: "tnum" 1; /* aligned figures for angles and reps */
   }
 
   h1, h2, h3 {
-    @apply font-semibold tracking-tight text-ink;
+    @apply font-bold tracking-tight text-ink;
   }
 
   ::selection {
@@ -51,9 +52,9 @@
     @apply font-mono;
   }
 
-  /* Disclosure ("How to do it"): chevron, no animation needed */
+  /* Disclosure ("How to do it"): chevron */
   details > summary {
-    @apply cursor-pointer select-none list-none font-semibold text-accent hover:underline;
+    @apply cursor-pointer select-none list-none font-semibold text-accent hover:text-accent-hover;
   }
   details > summary::-webkit-details-marker {
     display: none;
@@ -83,78 +84,85 @@
 
   /* ---------- Surfaces ---------- */
   .card {
-    @apply relative border border-rule bg-white;
+    @apply relative rounded-2xl border border-rule bg-white shadow-card;
   }
   .card-hover {
-    @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:border-ink;
+    @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lift;
+  }
+  /* Empty states: dashed, friendly, centred */
+  .empty-state {
+    @apply flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-rule bg-white/60 px-6 py-10 text-center text-sm text-muted;
+  }
+  .empty-state > svg {
+    @apply mb-1 h-9 w-9 text-accent/60;
   }
 
   /* Skeleton placeholder while data loads */
   .skeleton {
-    @apply animate-shimmer bg-paper;
-    background-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.05) 50%, transparent 100%);
+    @apply animate-shimmer rounded-2xl bg-rule/60;
+    background-image: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.6) 50%, transparent 100%);
     background-size: 200% 100%;
   }
 
-  /* A 1px rule along the top that draws itself in from the start edge */
-  .section-title,
+  /* Section heading: icon in a soft square + title */
+  .section-title {
+    @apply mb-4 flex items-center gap-3 text-xl font-bold text-ink;
+  }
+  .section-title > svg,
+  .icon-chip {
+    @apply grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-tint p-2 text-accent;
+  }
+  .icon-chip > svg {
+    @apply h-5 w-5;
+  }
+  /* kept for the legal pages and footer: a thin divider above */
   .rule-top {
-    @apply relative pt-3;
-  }
-  .section-title::after,
-  .rule-top::after {
-    content: "";
-    @apply pointer-events-none absolute inset-x-0 top-0 h-px origin-left animate-rule-draw bg-ink;
-  }
-  [dir="rtl"] :is(.section-title, .rule-top)::after {
-    @apply origin-right;
+    @apply border-t border-rule pt-6;
   }
 
-  /* Section titles are numbered: 01, 02, 03 ... (the page grid's folio numbers) */
-  .stagger {
-    counter-reset: section;
+  /* Small rounded labels ("10 reps", "0°–90°") */
+  .chip {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-paper px-3 py-1 text-sm font-semibold text-ink;
   }
-  .section-title {
-    @apply mb-4 flex items-baseline gap-3 text-sm font-semibold uppercase tracking-[0.12em] text-ink;
-    counter-increment: section;
-  }
-  .section-title::before {
-    content: counter(section, decimal-leading-zero);
-    @apply text-sm font-semibold tabular-nums text-accent;
+  .chip > svg {
+    @apply h-4 w-4 text-muted;
   }
 
   /* ---------- Buttons ---------- */
   .btn {
-    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 whitespace-nowrap rounded border px-4 py-2 text-sm font-semibold
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2 text-sm font-semibold
       transition duration-150 ease-out active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100;
   }
   .btn svg {
     @apply h-4 w-4 shrink-0;
   }
   .btn-primary {
-    @apply btn border-accent bg-accent text-white hover:border-accent-hover hover:bg-accent-hover;
+    @apply btn border-accent bg-accent text-white shadow-sm hover:border-accent-hover hover:bg-accent-hover;
   }
   .btn-secondary {
-    @apply btn border-ink bg-white text-ink hover:bg-ink hover:text-white;
+    @apply btn border-rule bg-white text-ink hover:border-muted/40 hover:bg-paper;
   }
   .btn-ghost {
-    @apply btn border-transparent text-muted hover:text-ink hover:underline;
+    @apply btn border-transparent text-muted hover:bg-paper hover:text-ink;
   }
   .btn-danger {
-    @apply btn border-transparent text-danger hover:border-danger hover:bg-danger-tint;
+    @apply btn border-transparent text-danger hover:bg-danger-tint;
   }
   .btn-lg {
-    @apply min-h-[3.25rem] px-6 py-3 text-base;
+    @apply min-h-[3.25rem] rounded-2xl px-6 py-3 text-base;
+  }
+  .btn-lg svg {
+    @apply h-5 w-5;
   }
 
   /* ---------- Form controls ---------- */
   .field {
-    @apply block min-h-[2.75rem] w-full rounded border border-muted bg-white px-3.5 py-2.5 text-base text-ink
-      transition-colors duration-150 placeholder:text-muted
-      hover:border-ink focus:border-accent focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-accent;
+    @apply block min-h-[2.75rem] w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base text-ink
+      transition-colors duration-150 placeholder:text-slate-400
+      hover:border-slate-400 focus:border-accent focus:outline focus:outline-[3px] focus:outline-offset-0 focus:outline-accent/20;
   }
   .field-sm {
-    @apply field min-h-[2.5rem] px-3 py-1.5 text-sm;
+    @apply field min-h-[2.5rem] rounded-lg px-3 py-1.5 text-sm;
   }
   /* Visible label above a field in the auth forms; pulls the field closer */
   .form-label {
@@ -169,14 +177,14 @@
     @apply pe-12;
   }
   .pw-toggle {
-    @apply absolute inset-y-0 end-0 grid w-12 place-items-center text-muted transition-colors duration-150 hover:text-ink focus-visible:outline-offset-[-4px];
+    @apply absolute inset-y-0 end-0 grid w-12 place-items-center rounded-e-xl text-muted transition-colors duration-150 hover:text-ink focus-visible:outline-offset-[-4px];
   }
   .pw-toggle svg {
     @apply h-5 w-5 animate-icon-in;
   }
   /* Consent checkboxes: turn red (with an outline, not colour only) if skipped on submit */
   .consent {
-    @apply flex cursor-pointer items-start gap-3 text-sm leading-snug text-ink;
+    @apply flex cursor-pointer items-start gap-3 rounded-xl text-sm leading-snug text-ink;
   }
   .consent > input {
     @apply mt-0.5;
@@ -189,11 +197,10 @@
   }
 
   .field-label {
-    @apply flex flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-muted;
+    @apply flex flex-col gap-1.5 text-xs font-semibold text-muted;
   }
-  /* the label's small-caps styling shouldn't leak into the field itself */
   .field-label > :is(input, select, textarea) {
-    @apply text-sm font-normal normal-case tracking-normal text-ink;
+    @apply text-sm font-normal text-ink;
   }
 
   /* ---------- Inline validation (replaces the browser's popup) ----------
@@ -203,12 +210,12 @@
     @apply animate-shake border-danger bg-danger-tint;
   }
   :is(.field, .field-sm):user-invalid:focus {
-    @apply outline-danger;
+    @apply outline-danger/25;
   }
   /* correctly filled: a small check mark (shape, not colour alone) */
   .field:user-valid:not(:placeholder-shown) {
     @apply pe-10;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23067647' stroke-width='2.4' stroke-linecap='square'%3E%3Cpath d='M5 10.5l3.2 3.2L15 7'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23067647' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 10.5l3.2 3.2L15 7'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-size: 1.05rem;
     background-position: right 0.9rem center;
@@ -235,7 +242,7 @@
     @apply text-danger;
   }
   .field-error {
-    @apply text-xs font-semibold normal-case leading-snug tracking-normal text-danger;
+    @apply text-xs font-semibold leading-snug text-danger;
   }
 
   /* Browser autofill: keep the white field instead of Chrome's yellow/blue fill */
@@ -268,7 +275,7 @@
   }
   .field-hint::before {
     content: "!";
-    @apply mt-0.5 grid h-4 w-4 shrink-0 place-items-center bg-danger text-[0.625rem] font-bold leading-none text-white;
+    @apply mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-danger text-[0.625rem] font-bold leading-none text-white;
   }
   /* empty field -> the "please fill this in" hint;
      filled but wrong (bad email, too short) -> the "format" hint */
@@ -287,24 +294,27 @@
 
   /* ---------- Feedback ---------- */
   .alert-error {
-    @apply flex animate-alert-in items-start gap-3 border-s-4 border-danger bg-danger-tint px-4 py-3 text-sm font-medium leading-snug text-danger;
+    @apply flex animate-alert-in items-start gap-3 rounded-xl border border-danger/20 bg-danger-tint px-4 py-3 text-sm font-medium leading-snug text-danger;
   }
   .alert-error::before {
     content: "!";
-    @apply mt-px grid h-5 w-5 shrink-0 place-items-center bg-danger text-xs font-bold leading-none text-white;
+    @apply mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full bg-danger text-xs font-bold leading-none text-white;
+  }
+  .alert-success {
+    @apply flex animate-alert-in items-center gap-3 rounded-xl border border-success/20 bg-success-tint px-4 py-3 font-semibold text-success;
   }
 
   .link {
-    @apply font-semibold text-accent underline decoration-1 underline-offset-4 transition-all duration-150 hover:text-accent-hover hover:decoration-2 hover:underline-offset-[6px];
+    @apply font-semibold text-accent underline decoration-accent/30 decoration-2 underline-offset-4 transition-colors duration-150 hover:text-accent-hover hover:decoration-accent-hover;
   }
 
   /* ---------- Segmented control (Patient / Physiotherapist) ----------
-     A blue block slides under whichever option is checked. */
+     A white pill slides under whichever option is checked. */
   .segmented {
-    @apply relative grid grid-cols-2 border border-ink p-1;
+    @apply relative grid grid-cols-2 rounded-xl bg-paper p-1 ring-1 ring-inset ring-rule;
   }
   .segmented-indicator {
-    @apply pointer-events-none absolute inset-y-1 start-1 w-[calc(50%-0.25rem)] bg-accent transition-transform duration-300 ease-out;
+    @apply pointer-events-none absolute inset-y-1 start-1 w-[calc(50%-0.25rem)] rounded-lg bg-accent shadow-sm transition-transform duration-300 ease-out;
   }
   .segmented:has(> label:nth-of-type(2) :checked) .segmented-indicator {
     transform: translateX(100%);
@@ -313,19 +323,23 @@
     transform: translateX(-100%);
   }
   .segmented > label {
-    @apply relative z-10 flex min-h-[2.75rem] cursor-pointer items-center justify-center px-2 text-center text-sm font-semibold text-ink transition-colors duration-300
+    @apply relative z-10 flex min-h-[2.75rem] cursor-pointer items-center justify-center gap-2 rounded-lg px-2 text-center text-sm font-semibold text-muted transition-colors duration-300
       has-[:checked]:text-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent;
+  }
+  .segmented > label svg {
+    @apply h-4 w-4;
   }
 
   /* ---------- Confirm dialog (native <dialog>) ---------- */
   .dialog {
-    @apply m-auto w-[calc(100%-2rem)] max-w-md border border-ink bg-white p-0 text-ink;
+    @apply m-auto w-[calc(100%-2rem)] max-w-md overflow-hidden rounded-2xl border-0 bg-white p-0 text-ink shadow-lift;
   }
   .dialog[open] {
     @apply animate-dialog-in;
   }
   .dialog::backdrop {
-    background: rgb(17 17 17 / 0.45);
+    background: rgb(15 23 42 / 0.45);
+    backdrop-filter: blur(2px);
     animation: backdrop-in 0.25s ease-out;
   }
 
@@ -334,7 +348,7 @@
     @apply w-full border-collapse text-sm tabular-nums;
   }
   .data-table th {
-    @apply border-b border-ink px-3 py-2.5 text-start text-xs font-semibold uppercase tracking-[0.1em] text-muted;
+    @apply border-b border-rule bg-paper px-3 py-2.5 text-start text-xs font-semibold text-muted;
   }
   .data-table td {
     @apply border-b border-rule px-3 py-2.5 text-ink;
@@ -343,22 +357,25 @@
     @apply border-b-0;
   }
   .data-table tbody tr:hover td {
-    @apply bg-paper;
+    @apply bg-paper/60;
   }
 
   /* ---------- App header ---------- */
   /* Slides away when scrolling down, comes back on any scroll up (see useHideOnScroll).
      Never hides while something inside it has keyboard focus. */
   .app-header {
-    @apply sticky top-0 z-20 border-b border-ink bg-white transition-transform duration-300 ease-out;
+    @apply sticky top-0 z-20 border-b border-rule bg-white/90 backdrop-blur transition-transform duration-300 ease-out;
   }
   .app-header[data-hidden="true"]:not(:focus-within) {
     transform: translateY(-100%);
   }
+  .avatar {
+    @apply grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-tint text-sm font-bold text-accent;
+  }
 
   /* Keyboard users can jump straight past the header */
   .skip-link {
-    @apply sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:bg-ink focus:px-4 focus:py-2 focus:text-white;
+    @apply sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-white;
   }
 
   /* ---------- Footer (business details + legal links) ---------- */
@@ -371,7 +388,7 @@
 
   /* One-time notice about browser storage (no tracking, so no consent needed) */
   .storage-notice {
-    @apply fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-2xl animate-fade-up flex-wrap items-center gap-3 border border-ink bg-white px-4 py-3 text-sm sm:inset-x-6;
+    @apply fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-2xl animate-fade-up flex-wrap items-center gap-3 rounded-2xl border border-rule bg-white px-4 py-3 text-sm shadow-lift sm:inset-x-6;
   }
 
   /* ---------- Legal pages: readable long-form text ---------- */
@@ -392,54 +409,110 @@
     @apply link;
   }
   .placeholder {
-    @apply bg-caution-tint px-1 font-semibold text-caution;
+    @apply rounded bg-caution-tint px-1 font-semibold text-caution;
   }
 
   /* ---------- Auth pages ---------- */
   .auth-card {
-    @apply mx-auto mt-[8vh] w-full max-w-md animate-fade-up border-t-4 border-accent bg-white px-6 pb-10 pt-8 sm:border sm:border-t-4 sm:border-rule sm:border-t-accent sm:px-10;
+    @apply mx-auto mt-[6vh] w-full max-w-md animate-fade-up bg-white px-6 pb-10 pt-8 sm:rounded-3xl sm:border sm:border-rule sm:px-10 sm:shadow-lift;
   }
   /* RehabVision brand lockup (logo + name), drawn in CSS */
   .auth-card > h1::before {
     content: "RehabVision";
-    @apply mb-10 flex h-12 items-center ps-[3.75rem] text-lg font-semibold tracking-tight text-ink;
+    @apply mb-8 flex h-12 items-center ps-[3.75rem] text-lg font-bold tracking-tight text-ink;
     background: url("/logo-mark.png") left center / 3rem 3rem no-repeat;
   }
   [dir="rtl"] .auth-card > h1::before {
     background-position: right center;
   }
+  .auth-lead {
+    @apply -mt-5 mb-7 text-base text-muted;
+  }
 
-  /* ---------- Exercise coach: camera frame with square corner marks ---------- */
+  /* ---------- Exercise coach ---------- */
+  .hud-frame {
+    @apply overflow-hidden rounded-3xl bg-ink shadow-lift;
+  }
+  /* soft corner brackets over the camera */
   .hud-frame::before {
     content: "";
-    @apply pointer-events-none absolute inset-3 z-10;
+    @apply pointer-events-none absolute inset-4 z-10 opacity-70;
     background:
-      linear-gradient(#fff, #fff) top left / 22px 2px,
-      linear-gradient(#fff, #fff) top left / 2px 22px,
-      linear-gradient(#fff, #fff) top right / 22px 2px,
-      linear-gradient(#fff, #fff) top right / 2px 22px,
-      linear-gradient(#fff, #fff) bottom left / 22px 2px,
-      linear-gradient(#fff, #fff) bottom left / 2px 22px,
-      linear-gradient(#fff, #fff) bottom right / 22px 2px,
-      linear-gradient(#fff, #fff) bottom right / 2px 22px;
+      linear-gradient(#fff, #fff) top left / 26px 3px,
+      linear-gradient(#fff, #fff) top left / 3px 26px,
+      linear-gradient(#fff, #fff) top right / 26px 3px,
+      linear-gradient(#fff, #fff) top right / 3px 26px,
+      linear-gradient(#fff, #fff) bottom left / 26px 3px,
+      linear-gradient(#fff, #fff) bottom left / 3px 26px,
+      linear-gradient(#fff, #fff) bottom right / 26px 3px,
+      linear-gradient(#fff, #fff) bottom right / 3px 26px;
     background-repeat: no-repeat;
   }
+  /* status pill in the top corner of the camera ("Tracking", "Step into view") */
+  .hud-pill {
+    @apply absolute start-6 top-6 z-20 flex items-center gap-2 rounded-full bg-ink/70 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur;
+  }
+  .hud-pill > i {
+    @apply h-2.5 w-2.5 rounded-full;
+  }
+  /* a warning shown over the camera, readable from across the room */
+  .hud-alert {
+    @apply absolute inset-x-4 bottom-4 z-20 animate-alert-in rounded-2xl bg-danger/95 px-5 py-4 text-center text-xl font-bold text-white shadow-lift sm:text-2xl;
+  }
 
-  /* ---------- Coach readout: big numerals in a ruled 3-cell grid ---------- */
+  /* Big live numbers in three cards */
   .readout {
-    @apply grid grid-cols-3 border border-ink;
+    @apply grid grid-cols-3 gap-2 sm:gap-3;
   }
   .readout > div {
-    @apply flex flex-col gap-1 px-3 py-3 sm:px-5 sm:py-4;
-  }
-  .readout > div + div {
-    @apply border-s border-ink;
+    @apply flex flex-col gap-1.5 rounded-2xl border border-rule bg-white px-3 py-3 shadow-card sm:px-5 sm:py-4;
   }
   .readout dt {
-    @apply text-xs font-semibold uppercase tracking-[0.1em] text-muted;
+    @apply text-xs font-semibold text-muted sm:text-sm;
   }
   .readout dd {
-    @apply text-3xl font-semibold leading-none tabular-nums text-ink sm:text-5xl;
+    @apply text-3xl font-bold leading-none tabular-nums text-ink sm:text-5xl;
+  }
+
+  /* Range bar: where the patient's angle is, against the safe range and target */
+  .range-track {
+    @apply relative h-4 rounded-full bg-danger-tint ring-1 ring-inset ring-danger/15;
+  }
+  .range-safe {
+    @apply absolute inset-y-0 rounded-full bg-success-tint ring-1 ring-inset ring-success/25;
+  }
+  .range-mark {
+    @apply absolute -inset-y-1.5 w-1 -translate-x-1/2 rounded-full;
+  }
+  .range-thumb {
+    @apply absolute top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-accent shadow-lift transition-[left] duration-150 ease-out;
+  }
+
+  /* thin progress bar (reps done) */
+  .progress {
+    @apply h-2.5 overflow-hidden rounded-full bg-rule;
+  }
+  .progress > span {
+    @apply block h-full rounded-full bg-accent transition-[width] duration-500 ease-out;
+  }
+
+  /* numbered steps ("1 Add your physio", "2 Do your exercises") */
+  .step-num {
+    @apply grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent text-sm font-bold text-white;
+  }
+  .step-num[data-done="true"] {
+    @apply bg-success;
+  }
+
+  /* stat tiles on the physio dashboard */
+  .stat {
+    @apply flex items-center gap-3 rounded-2xl border border-rule bg-white px-4 py-3 shadow-card;
+  }
+  .stat dd {
+    @apply text-2xl font-bold leading-none tabular-nums text-ink;
+  }
+  .stat dt {
+    @apply text-xs font-semibold text-muted;
   }
 }
 

@@ -24,14 +24,14 @@ createRoot(document.getElementById('root')).render(
           position="top-center"
           toastOptions={{
             style: {
-              borderRadius: '2px',
+              borderRadius: '14px',
               padding: '12px 16px',
               fontSize: '16px',
               fontWeight: 500,
-              color: '#111111',
+              color: '#0F172A',
               background: '#ffffff',
-              border: '1px solid #111111',
-              boxShadow: 'none',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 2px 4px rgb(15 23 42 / 0.05), 0 12px 32px rgb(15 23 42 / 0.09)',
             },
             success: { iconTheme: { primary: '#067647', secondary: '#ffffff' } },
             error: { iconTheme: { primary: '#B42318', secondary: '#ffffff' } },

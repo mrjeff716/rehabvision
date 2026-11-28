@@ -41,13 +41,13 @@ const ResetPasswordPage = () => {
     <main className="auth-card">
       {!token ? (
         <>
-          <h1 className="mb-4 text-3xl font-semibold">Link not valid</h1>
+          <h1 className="mb-4 text-3xl font-bold">Link not valid</h1>
           <p className="text-ink">This reset link is missing its code. Open the link from your email again, or request a new one.</p>
           <p className="mt-6 text-center text-sm text-muted"><Link className="link" to="/forgot-password">Request a new link</Link></p>
         </>
       ) : (
         <>
-          <h1 className="mb-7 text-3xl font-semibold">Choose a new password</h1>
+          <h1 className="mb-7 text-3xl font-bold">Choose a new password</h1>
           <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
             <label className="form-label" htmlFor="reset-password">New password (at least 8 characters)</label>
             <PasswordField id="reset-password" placeholder="Choose a new password" autoComplete="new-password" autoFocus

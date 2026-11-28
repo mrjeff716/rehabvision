@@ -8,7 +8,7 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { LoaderCircle } from 'lucide-react'
+import { HeartPulse, LoaderCircle, Stethoscope } from 'lucide-react'
 import { useAuth } from '../auth/authContext'
 import PasswordField from '../components/PasswordField'
 import SiteFooter from '../components/SiteFooter'
@@ -36,7 +36,8 @@ const RegisterPage = () => {
   return (
     <>
       <main className="auth-card">
-        <h1 className="mb-7 text-3xl font-semibold">Create an account</h1>
+        <h1 className="mb-7 text-3xl font-bold">Create an account</h1>
+        <p className="auth-lead">It takes less than a minute.</p>
         <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
           {/* invalid fields show the styled hints below instead of the browser's popup */}
           <fieldset className="mb-1">
@@ -45,13 +46,18 @@ const RegisterPage = () => {
               <span className="segmented-indicator" aria-hidden />
               <label>
                 <input className="sr-only" type="radio" name="role" value="patient" checked={form.role === 'patient'} onChange={update('role')} />
-                Patient
+                <HeartPulse aria-hidden /> Patient
               </label>
               <label>
                 <input className="sr-only" type="radio" name="role" value="physio" checked={form.role === 'physio'} onChange={update('role')} />
-                Physiotherapist
+                <Stethoscope aria-hidden /> Physiotherapist
               </label>
             </div>
+            <p className="mt-2 text-sm text-muted">
+              {form.role === 'patient'
+                ? 'Do the exercises your physiotherapist assigns, with live camera feedback.'
+                : 'Assign exercises to your patients and follow their progress.'}
+            </p>
           </fieldset>
 
           <label className="form-label" htmlFor="reg-name">Full name</label>

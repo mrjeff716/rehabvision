@@ -34,7 +34,7 @@ const ForgotPasswordPage = () => {
     <main className="auth-card">
       {sentTo ? (
         <>
-          <h1 className="mb-4 text-3xl font-semibold">Check your email</h1>
+          <h1 className="mb-4 text-3xl font-bold">Check your email</h1>
           <div role="status" className="flex flex-col gap-3.5 leading-relaxed text-ink">
             <p>If an account exists for <span className="font-semibold">{sentTo}</span>, we've sent a link to reset your password. It expires in 30 minutes.</p>
             <p className="text-sm text-muted">Can't find it? Check your spam folder, or <button type="button" className="link" onClick={() => setSentTo('')}>try again</button>.</p>
@@ -43,7 +43,7 @@ const ForgotPasswordPage = () => {
         </>
       ) : (
         <>
-          <h1 className="mb-3 text-3xl font-semibold">Forgot password</h1>
+          <h1 className="mb-3 text-3xl font-bold">Forgot password</h1>
           <p className="mb-6 text-muted">Enter the email you signed up with and we'll send you a link to choose a new password.</p>
           <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
             <label className="form-label" htmlFor="forgot-email">Email</label>

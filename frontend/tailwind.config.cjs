@@ -1,42 +1,37 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+// CommonJS (.cjs) on purpose: Node 22 caches ES-module configs, so a running
+// dev server would never see edits to this file without a restart.
+module.exports = {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    // Swiss: square corners everywhere (max 2px), so the scale is replaced, not extended
-    borderRadius: {
-      none: '0',
-      DEFAULT: '2px',
-      sm: '2px',
-      md: '2px',
-      lg: '2px',
-      xl: '2px',
-      '2xl': '2px',
-      full: '9999px',
-    },
     extend: {
       fontFamily: {
-        // One family, from the device: no web-font request to a third party (privacy),
+        // System fonts only: no web-font request to a third party (privacy),
         // nothing to download. Arabic/Armenian fall back to the OS's own fonts.
-        sans: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'system-ui', 'sans-serif'],
-        mono: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'system-ui', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        mono: ['ui-monospace', '"SF Mono"', '"Cascadia Mono"', 'Consolas', 'monospace'],
       },
       colors: {
-        ink: '#111111',     // text, 18.9:1 on white
-        muted: '#555555',   // secondary text, 7.5:1 on white
-        rule: '#E2E2E4',    // 1px lines and borders
-        paper: '#F7F7F8',   // alternate surface
-        // the ONE accent: Yves Klein Blue (10.7:1 on white)
+        ink: '#0F172A',     // text, 17.8:1 on white
+        muted: '#475569',   // secondary text, 7.6:1 on white
+        rule: '#E2E8F0',    // borders and dividers
+        paper: '#F4F6FB',   // page background behind white cards
+        // calm, friendly blue (6.7:1 on white)
         accent: {
-          DEFAULT: '#002FA7',
-          hover: '#00237D',
-          tint: '#EEF2FB',
+          DEFAULT: '#1D4ED8',
+          hover: '#1E40AF',
+          tint: '#EEF3FF',
         },
         danger: { DEFAULT: '#B42318', tint: '#FEF3F2' },  // 6.6:1 on tint
         caution: { DEFAULT: '#7A4D00', tint: '#FFF6E0' }, // 7.4:1 on tint
         success: { DEFAULT: '#067647', tint: '#ECFDF3' }, // 5.6:1 on tint
+      },
+      boxShadow: {
+        card: '0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px rgb(15 23 42 / 0.05)',
+        lift: '0 2px 4px rgb(15 23 42 / 0.05), 0 12px 32px rgb(15 23 42 / 0.09)',
       },
       transitionTimingFunction: {
         out: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
@@ -56,7 +51,7 @@ export default {
         },
         // a number that just changed (rep counter) pops once
         tick: {
-          '0%': { transform: 'scale(1.18)', color: '#002FA7' },
+          '0%': { transform: 'scale(1.18)', color: '#1D4ED8' },
           '100%': { transform: 'none' },
         },
         // icon swapping in (eye / copy check)
