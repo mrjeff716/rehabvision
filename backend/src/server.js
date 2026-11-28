@@ -24,16 +24,16 @@ import exercisesRoutes from './routes/exercises.js'
 import patientRoutes from './routes/patient.js'
 import physioRoutes from './routes/physio.js'
 import sessionsRoutes from './routes/sessions.js'
+import physioAccountRoutes from './routes/physioAccount.js'
+import docsRoutes from './routes/docs.js'
+import adminRoutes from './routes/admin.js'
 
 export const app = express()
 const PORT = process.env.PORT || 5001
 
 // --- Middleware: runs on every request before it reaches a route -----------
 
-// Parse JSON request bodies so routes can read req.body
-app.use(express.json({ limit: '200kb' }))
-
-// CORS: only allow the website (Vite dev server by default, the Vercel site
+// CORS: only allow the website (Vite dev server by default, the Netlify site
 // when hosted; see CLIENT_ORIGIN) to call this API from a browser. Other
 // sites' pages are blocked.
 app.use(cors({ origin: clientOrigins() }))
@@ -44,6 +44,13 @@ app.set('trust proxy', trustProxySetting())
 
 // Basic protection against too many requests from one IP
 app.use(rateLimiter)
+
+// Document photos are bigger than anything else, so only this route accepts
+// large bodies (a 4 MB file is about 5.4 MB as base64)
+app.use('/api/docs', express.json({ limit: '6mb' }))
+
+// Parse JSON request bodies so routes can read req.body
+app.use(express.json({ limit: '200kb' }))
 
 // On Vercel there is no start() step (see the bottom of this file), so connect
 // to the database on the first request instead. The connection is then reused.
@@ -72,6 +79,9 @@ app.use('/api/exercises', exercisesRoutes) // the exercise catalog
 app.use('/api/patient', patientRoutes)    // patient: find/link physio
 app.use('/api/physio', physioRoutes)      // physio: patients, exercises, flags
 app.use('/api/sessions', sessionsRoutes)  // patient: save/list sessions
+app.use('/api/physio', physioAccountRoutes) // physio: profile, verification, aid, billing
+app.use('/api/docs', docsRoutes)          // physio: verification and aid documents
+app.use('/api/admin', adminRoutes)        // review team: verification, aid, payments
 
 // Unknown /api route
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }))

@@ -45,6 +45,49 @@ const userSchema = new mongoose.Schema(
     // patients (who have none) share the unique index.
     publicId: { type: String, unique: true, sparse: true },
 
+    // --- Physio only: profile, verification, financial aid and billing --------
+    // (business plan slides 4–9). All optional so existing accounts still load.
+    region: { type: String, default: null },       // pricing region, see data/pricing.js
+    phone: { type: String, default: null, maxlength: 30 },
+    clinic: { type: String, default: null, maxlength: 120 },
+    languages: { type: [String], default: undefined }, // e.g. ['ar', 'en', 'fr']
+    listed: { type: Boolean, default: false },     // shown in the patient directory
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    verification: {
+      status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: undefined },
+      submittedAt: Date,
+      reviewedAt: Date,
+      verifiedUntil: Date,   // re-verified yearly, with a 30-day grace period
+      specialist: Boolean,   // optional insurance/certificates were checked
+      note: String,          // reviewer's note to the physio
+    },
+    aid: {
+      status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: undefined },
+      tracks: { type: Object, default: undefined }, // { A: true, B: 'under250', C: 'damaged', D: true, E: 'NGO name' }
+      suggestedPct: Number,
+      approvedPct: Number,   // aid % on top of the regional discount
+      sponsorPct: Number,    // track E: share a sponsor pays
+      approvals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // >50% total needs 2 reviewers
+      submittedAt: Date,
+      validUntil: Date,      // 6 months, then renew with fresh proof
+      bannedUntil: Date,     // false documents: no aid for 12 months
+      note: String,
+    },
+    billing: {
+      plan: { type: String, enum: ['starter', 'growth', 'practice'], default: undefined },
+      annual: Boolean,
+      paidUntil: Date,
+      freeMonths: Number,    // referral / pilot credits, applied by a reviewer
+      pilotUntil: Date,      // pilot physios pay half until this date
+      pending: {             // a Whish/OMT transfer waiting to be confirmed
+        method: { type: String, enum: ['whish', 'omt'] },
+        reference: String,
+        amount: Number,
+        months: Number,
+        submittedAt: Date,
+      },
+    },
+
     // Patient only: their physio, and the exercises that physio assigned
     physio: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     exercises: {

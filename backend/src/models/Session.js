@@ -41,6 +41,8 @@ const sessionSchema = new mongoose.Schema(
     totalReps: Number, // calculated by the server from reps
     goodReps: Number,  // reps that reached the target
     painScore: { type: Number, min: 0, max: 10 }, // optional, 0–10
+    // Incident log (clinical liability): the patient says something went wrong
+    incident: { type: String, maxlength: 500, default: undefined },
     performedAt: { type: Date, default: Date.now, index: true },
   },
   { timestamps: true },

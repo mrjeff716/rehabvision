@@ -10,12 +10,15 @@ import App from './App.jsx'
 import { BrowserRouter } from 'react-router'
 import { Toaster } from "react-hot-toast"
 import AuthProvider from './auth/AuthProvider.jsx'
+import { LanguageProvider } from './i18n/AppLanguage.jsx'
 
 createRoot(document.getElementById('root')).render(
   // StrictMode: extra checks during development only (no effect in production)
   <StrictMode>
     {/* BrowserRouter: lets the app show different pages for different URLs */}
     <BrowserRouter>
+      {/* LanguageProvider: the display language (English, French, Arabic) */}
+      <LanguageProvider>
       {/* AuthProvider: makes "who is logged in" available everywhere */}
       <AuthProvider>
         <App />
@@ -24,20 +27,20 @@ createRoot(document.getElementById('root')).render(
           position="top-center"
           toastOptions={{
             style: {
-              borderRadius: '14px',
-              padding: '12px 16px',
+              borderRadius: '9999px',
+              padding: '10px 18px',
               fontSize: '16px',
               fontWeight: 500,
-              color: '#0F172A',
-              background: '#ffffff',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 2px 4px rgb(15 23 42 / 0.05), 0 12px 32px rgb(15 23 42 / 0.09)',
+              color: '#ffffff',
+              background: '#14323A',
+              boxShadow: '0 22px 48px -20px rgb(20 50 58 / 0.55)',
             },
-            success: { iconTheme: { primary: '#067647', secondary: '#ffffff' } },
-            error: { iconTheme: { primary: '#B42318', secondary: '#ffffff' } },
+            success: { iconTheme: { primary: '#A8DCCF', secondary: '#14323A' } },
+            error: { iconTheme: { primary: '#F28B8F', secondary: '#14323A' } },
           }}
         />
       </AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   </StrictMode>,
 )

@@ -9,11 +9,13 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { useLang } from '../i18n/AppLanguage'
 
 const KEY = 'storageNoticeSeen'
 const seen = () => { try { return localStorage.getItem(KEY) === '1' } catch { return true } }
 
 const StorageNotice = () => {
+  const { t } = useLang()
   const [open, setOpen] = useState(() => !seen())
   if (!open) return null
 
@@ -23,12 +25,11 @@ const StorageNotice = () => {
   }
 
   return (
-    <section className="storage-notice" aria-label="Storage notice">
+    <section className="storage-notice" aria-label={t.linkCookies}>
       <p className="me-auto">
-        No cookies or tracking here. We only save what keeps you logged in and remembers your
-        settings. <Link className="link" to="/cookies">Details</Link>
+        {t.storageNotice} <Link className="link" to="/cookies">{t.details}</Link>
       </p>
-      <button className="btn-primary" onClick={dismiss}>OK, got it</button>
+      <button className="btn-primary" onClick={dismiss}>{t.okGotIt}</button>
     </section>
   )
 }

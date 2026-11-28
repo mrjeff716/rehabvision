@@ -5,28 +5,37 @@
 //   2. See the (up to 3) exercises the physio assigned, and start one.
 //   3. When an exercise is finished, save the results (or keep them on the
 //      device if offline, and send them next time).
+// Page text follows the app language; the exercise coach has its own language
+// (it supports more languages, e.g. Armenian).
 // =============================================================================
 
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { Check, Dumbbell, LoaderCircle, Play, Search, ShieldCheck, Stethoscope, TriangleAlert, X } from 'lucide-react'
+import { LoaderCircle, Play, TriangleAlert } from 'lucide-react'
 import useConfirm from '../components/useConfirm'
 import { useAuth } from '../auth/authContext'
-import { api, saveSession, flushPendingSessions } from '../api'
+import { api, addSessionReport, saveSession, flushPendingSessions } from '../api'
 import ExerciseCoach from '../pose/ExerciseCoach'
-import { getStrings } from '../i18n/messages'
+import PainReport from '../components/PainReport'
+import PhysioDirectory from '../components/PhysioDirectory'
+import { LANGUAGES, getStrings, loadLang, saveLang } from '../i18n/messages'
+import { useLang } from '../i18n/AppLanguage'
 
-const PatientHome = ({ lang }) => {
+const PatientHome = () => {
   const { user, setUser, refresh, logout } = useAuth()
+  const { t, tr, lang: appLang } = useLang()
+  const [coachLang, setCoachLang] = useState(loadLang)
   const [catalog, setCatalog] = useState(null) // exercise instructions
   const [active, setActive] = useState(null)   // the exercise being done now
+  const [finished, setFinished] = useState(null) // a finished session waiting for its pain report
   const [lookupId, setLookupId] = useState('')
   const [found, setFound] = useState(null)     // physio found by public ID, not yet linked
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [confirm, confirmDialog] = useConfirm()
-  const t = getStrings(lang)
-  const tRef = useRef(t) // the load effect below runs once; this keeps its toast in the current language
+  const coach = getStrings(coachLang)                 // coach language (save message)
+  const { exercises: exerciseNames, howTo, ui: pageUi } = getStrings(appLang) // page language
+  const tRef = useRef(t) // current text for the one-time effect below
   tRef.current = t
 
   // Expired login -> back to the login page; anything else -> show the message
@@ -38,12 +47,17 @@ const PatientHome = ({ lang }) => {
     refresh().catch((e) => { if (e.status === 401) logout() })
     api('/exercises').then(setCatalog).catch(() => {})
     flushPendingSessions(user._id).then((n) => {
-      if (n) toast.success(tRef.current.ui.sentLater(n))
+      if (n) toast.success(tRef.current.sentEarlier(n))
     })
   }, [user._id, refresh, logout])
 
+  const changeCoachLang = (e) => {
+    setCoachLang(e.target.value)
+    saveLang(e.target.value)
+  }
+
   // Opening or closing an exercise swaps the whole page, so start at the top
-  useEffect(() => { window.scrollTo(0, 0) }, [active])
+  useEffect(() => { window.scrollTo(0, 0) }, [active, finished])
 
   // Step 1 of linking: find the physio and show their name
   const findPhysio = async (e) => {
@@ -70,7 +84,7 @@ const PatientHome = ({ lang }) => {
       setUser(data.user)
       setFound(null)
       setLookupId('')
-      toast.success(t.ui.linked(data.user.physio.name))
+      toast.success(t.nowYourPhysio(data.user.physio.name))
     } catch (err) {
       handleError(err)
     } finally {
@@ -80,10 +94,9 @@ const PatientHome = ({ lang }) => {
 
   const unlinkPhysio = async () => {
     const ok = await confirm({
-      title: user.physio.name,
-      message: t.ui.confirmRemovePhysio,
-      confirmLabel: t.ui.remove,
-      cancelLabel: t.ui.no,
+      title: t.removePhysioTitle(user.physio.name),
+      message: t.removePhysioMsg,
+      confirmLabel: t.removePhysio,
     })
     if (!ok) return
     setError('')
@@ -95,17 +108,28 @@ const PatientHome = ({ lang }) => {
     }
   }
 
-  // Called by ExerciseCoach when the patient presses "Finish session"
+  // Called by ExerciseCoach when the patient presses "Finish session".
+  // The session is saved first (so it's never lost), then we ask about pain.
   const handleFinish = async (summary) => {
     setActive(null)
     const good = summary.reps.filter((r) => r.reachedTarget).length
     try {
-      const savedNow = await saveSession(user._id, summary)
-      if (savedNow) toast.success(t.ui.saved(good, summary.reps.length))
-      else toast(t.ui.keptOffline)
+      const id = await saveSession(user._id, summary)
+      if (id) toast.success(coach.ui.saved(good, summary.reps.length))
+      else toast(t.offlineKept)
+      setFinished({ id })
     } catch (err) {
-      toast.error(t.ui.saveFailed + err.message)
+      toast.error(t.couldNotSave(tr(err.message)))
     }
+  }
+
+  const saveFinished = async (report) => {
+    try {
+      await addSessionReport(user._id, finished.id, report)
+    } catch (err) {
+      toast.error(t.couldNotSave(tr(err.message)))
+    }
+    setFinished(null)
   }
 
   // Doing an exercise: show only the coach
@@ -114,126 +138,118 @@ const PatientHome = ({ lang }) => {
       <ExerciseCoach
         key={active._id}
         assignment={active}
-        lang={lang}
+        lang={coachLang}
         onFinish={handleFinish}
         onCancel={() => setActive(null)}
       />
     )
   }
 
+  if (finished) return <PainReport onSave={saveFinished} />
+
   const exercises = user.exercises ?? []
   const catalogById = Object.fromEntries((catalog?.exercises ?? []).map((ex) => [ex.id, ex]))
 
-  const firstName = user.name?.trim().split(/\s+/)[0] ?? ''
-
   return (
-    <div className="stagger flex flex-col gap-8">
-      <div>
-        <h2 className="text-3xl font-bold">{t.ui.hello(firstName)}</h2>
-        <p className="mt-1 text-muted">{user.physio && exercises.length ? t.ui.introReady : t.ui.introSetup}</p>
-      </div>
+    <div className="stagger flex flex-col gap-6">
+      {/* Language for the exercise coach (spoken + on-screen feedback) */}
+      <label className="flex items-center gap-3 self-end text-sm font-medium text-ink">
+        <span>{t.coachLanguage}</span>
+        <select value={coachLang} onChange={changeCoachLang} className="field-sm w-auto cursor-pointer">
+          {Object.entries(LANGUAGES).map(([code, l]) => (
+            <option key={code} value={code} lang={code}>{l.name}</option>
+          ))}
+        </select>
+      </label>
 
-      {error && <p role="alert" className="alert-error">{error}</p>}
+      {error && <p role="alert" className="alert-error">{tr(error)}</p>}
 
-      {/* --- Step 1: physiotherapist --- */}
+      {/* --- Physiotherapist --- */}
       <section>
-        <h2 className="section-title">
-          <span className="step-num" data-done={Boolean(user.physio)} aria-hidden>{user.physio ? <Check className="h-4 w-4" /> : 1}</span>
-          {t.ui.myPhysio}
-        </h2>
+        <h2 className="section-title">{t.myPhysio}</h2>
         {user.physio ? (
-          <div className="card flex flex-wrap items-center gap-3 p-4 sm:p-5">
-            <span className="icon-chip" aria-hidden><Stethoscope /></span>
-            <span className="me-auto flex flex-col leading-tight">
-              <span className="font-semibold text-ink">{user.physio.name}</span>
-              <code className="text-sm text-muted">{user.physio.publicId}</code>
-            </span>
-            <button className="btn-danger" onClick={unlinkPhysio}><X aria-hidden /> {t.ui.remove}</button>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-accent-tint px-4 py-3">
+            <span className="font-semibold text-ink">{user.physio.name} <bdi className="ms-1 text-sm font-medium text-accent" dir="ltr">({user.physio.publicId})</bdi></span>
+            <button className="btn-danger" onClick={unlinkPhysio}>{t.removePhysio}</button>
           </div>
         ) : (
-          <div className="card p-5 sm:p-6">
-            <label htmlFor="physio-id" className="mb-3 block text-ink">{t.ui.askForId}</label>
+          <>
+            <label htmlFor="physio-id" className="mb-1 block font-semibold">{t.physioId}</label>
+            <p className="mb-3 text-sm text-muted">{t.physioIdHelp}</p>
             <form onSubmit={findPhysio} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="flex flex-wrap gap-2">
               {/* invalid fields show the styled hints below instead of the browser's popup */}
-              <input id="physio-id" className="field min-w-0 flex-1 font-mono text-lg uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal sm:max-w-xs" placeholder="PT-XXXXXX" value={lookupId}
-                onChange={(e) => setLookupId(e.target.value)} required autoComplete="off" spellCheck={false} />
-              <p className="field-hint hint-empty order-last basis-full [--gap:0.5rem]">{t.ui.idHint}</p>
-              <button className="btn-primary btn-lg" disabled={busy}>
-                {busy && !found ? <LoaderCircle aria-hidden className="animate-spin" /> : <Search aria-hidden />} {t.ui.find}
+              <input id="physio-id" className="field min-w-0 max-w-xs flex-1 font-mono uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal" placeholder="PT-XXXXXX" value={lookupId}
+                onChange={(e) => setLookupId(e.target.value)} required />
+              <p className="field-hint hint-empty order-last basis-full [--gap:0.5rem]">{t.hintPhysioIdEmpty}</p>
+              <button className="btn-primary" disabled={busy}>
+                {busy && !found ? <LoaderCircle aria-hidden className="animate-spin" /> : null} {t.findPhysio}
               </button>
             </form>
             {found && (
-              <div role="status" className="mt-4 flex animate-alert-in flex-wrap items-center gap-3 rounded-xl border border-accent/30 bg-accent-tint px-4 py-3">
-                <span className="icon-chip bg-white" aria-hidden><Stethoscope /></span>
-                <span className="me-auto text-ink">{t.ui.isThisYourPhysio} <b>{found.name}</b> <span className="text-muted">({found.publicId})</span></span>
-                <button className="btn-primary" onClick={linkPhysio} disabled={busy}>
-                  <Check aria-hidden /> {t.ui.yesAdd}
-                </button>
-                <button className="btn-secondary" onClick={() => setFound(null)}>{t.ui.no}</button>
+              <div role="status" className="mt-4 flex animate-alert-in flex-wrap items-center gap-3 rounded-2xl bg-accent-tint px-4 py-3 text-sm ring-2 ring-accent/40">
+                <span className="me-auto text-ink">{t.isThisYourPhysio} <b>{found.name}</b> <bdi dir="ltr">({found.publicId})</bdi></span>
+                <button className="btn-primary" onClick={linkPhysio} disabled={busy}>{t.yesThatsThem}</button>
+                <button className="btn-secondary" onClick={() => setFound(null)}>{t.noSearchAgain}</button>
               </div>
             )}
-          </div>
+          </>
         )}
       </section>
 
-      {/* --- Step 2: exercises --- */}
+      {!user.physio && <PhysioDirectory onPick={(p) => { setFound(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />}
+
+      {/* --- Exercises --- */}
       <section>
-        <h2 className="section-title">
-          <span className="step-num" aria-hidden>2</span>
-          {t.ui.myExercises}
-        </h2>
+        <h2 className="section-title">{t.myExercises}</h2>
         {!user.physio ? (
-          <p className="empty-state"><Stethoscope aria-hidden />{t.ui.addPhysioFirst}</p>
+          <p className="card border-dashed px-5 py-8 text-center text-sm text-muted">{t.addPhysioFirst}</p>
         ) : exercises.length === 0 ? (
-          <p className="empty-state"><Dumbbell aria-hidden />{t.ui.noExercisesYet}</p>
+          <p className="card border-dashed px-5 py-8 text-center text-sm text-muted">{t.noExercisesYet}</p>
         ) : (
-          <ul className="stagger flex flex-col gap-4">
-            {exercises.map((a) => {
-              const info = catalogById[a.exerciseId]
-              // translated instructions if we have them, else the catalog's English
-              const how = t.howTo[a.exerciseId] ?? (info && { setup: info.setup, form: info.ideal_form, camera: info.measurement.preferred_camera_view })
-              return (
-                <li key={a._id} className="card flex flex-col gap-4 p-5 sm:p-6">
-                  <div className="flex items-start gap-3">
-                    <span className="icon-chip h-11 w-11" aria-hidden><Dumbbell /></span>
-                    <div className="flex flex-col gap-2">
-                      <h3 className="text-lg font-bold leading-snug">{t.exercises[a.exerciseId] ?? a.exerciseId}</h3>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="chip bg-accent-tint text-accent">{t.ui[a.side]}</span>
-                        <span className="chip">{t.ui.plan(a.reps, a.startAngle, a.targetAngle)}</span>
-                      </div>
+          <>
+            <p className="mb-4 text-sm text-muted">{t.cameraStays}</p>
+            <ul className="stagger flex flex-col gap-4">
+              {exercises.map((a) => {
+                const info = catalogById[a.exerciseId]
+                // translated instructions (i18n/patientText.js) if we have them, else the catalog's English
+                const translated = howTo[a.exerciseId]
+                const how = translated ?? (info && { setup: info.setup, form: info.ideal_form, camera: info.measurement.preferred_camera_view })
+                return (
+                  <li key={a._id} className="card card-hover flex flex-col gap-2 p-5 sm:p-6">
+                    <h3 className="text-lg font-bold leading-snug text-ink">{exerciseNames[a.exerciseId] ?? a.exerciseId}</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="chip bg-accent-tint text-accent-hover">{t[a.side]}</span>
+                      <span className="chip">{t.repsFromTo(a.reps, a.startAngle, a.targetAngle)}</span>
                     </div>
-                  </div>
-                  <p className="flex items-start gap-2.5 rounded-xl bg-danger-tint px-4 py-3 text-sm font-medium text-danger">
-                    <TriangleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{t.ui.stopIf} <bdi>{a.stopCriteria}</bdi></span>
-                  </p>
-                  {how && (
-                    <details className="rounded-xl bg-paper px-4 py-3 text-sm text-ink [&[open]>summary]:mb-2 [&>p]:leading-relaxed">
-                      <summary>{t.ui.howTo}</summary>
-                      <p>{how.setup}</p>
-                      <ul className="my-2 list-disc space-y-1 ps-5 marker:text-accent">
-                        {how.form.map((line) => <li key={line}>{line}</li>)}
-                      </ul>
-                      <p className="text-xs font-medium text-muted">{t.ui.camera} {how.camera}</p>
-                    </details>
-                  )}
-                  <button className="btn-primary btn-lg w-full sm:w-auto sm:self-start" onClick={() => setActive(a)}>
-                    <Play aria-hidden className="rtl:-scale-x-100" /> {t.ui.start}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+                    <p className="flex items-start gap-2.5 rounded-xl bg-danger-tint px-3 py-2 text-sm font-medium text-danger">
+                      <TriangleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>{t.stopIf} <bdi>{a.stopCriteria}</bdi></span>
+                    </p>
+                    {how && (
+                      <details className="mt-1 rounded-2xl bg-paper px-4 py-3 text-sm text-ink [&[open]>summary]:mb-2 [&>p]:leading-relaxed">
+                        <summary>{t.howToDoIt} {!translated && t.instructionsInEnglish && <span className="font-normal text-muted">{t.instructionsInEnglish}</span>}</summary>
+                        <div {...(translated ? {} : { lang: "en", dir: "ltr" })} className="text-start">
+                          <p>{how.setup}</p>
+                          <ul className="my-2 list-disc space-y-1 ps-5 marker:text-accent">
+                            {how.form.map((line) => <li key={line}>{line}</li>)}
+                          </ul>
+                          <p className="text-xs font-medium text-muted">{translated ? pageUi.camera : "Camera:"} {how.camera}</p>
+                        </div>
+                      </details>
+                    )}
+                    <button className="btn-primary btn-lg mt-2 w-full sm:w-auto sm:self-start" onClick={() => setActive(a)}>
+                      <Play aria-hidden className="rtl:-scale-x-100" /> {t.startExercise}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
       </section>
-
-      <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted">
-        <p className="flex items-start gap-2.5"><ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-success" />{t.ui.privacyNote}</p>
-        {(t.safetyNote ?? catalog?.safety_note) && <p>{t.safetyNote ?? catalog.safety_note}</p>}
-      </div>
 
       {confirmDialog}
+      {catalog?.safety_note && <p className="text-sm leading-relaxed text-muted">{t.safetyNote}</p>}
     </div>
   )
 }

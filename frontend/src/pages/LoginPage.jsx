@@ -7,10 +7,12 @@ import { Link } from 'react-router'
 import { LoaderCircle } from 'lucide-react'
 import { useAuth } from '../auth/authContext'
 import PasswordField from '../components/PasswordField'
-import SiteFooter from '../components/SiteFooter'
+import AuthLayout from '../components/AuthLayout'
+import { useLang } from '../i18n/AppLanguage'
 
 const LoginPage = () => {
   const { login } = useAuth()
+  const { t, tr } = useLang()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -29,31 +31,29 @@ const LoginPage = () => {
   }
 
   return (
-    <>
-    <main className="auth-card">
-      <h1 className="mb-7 text-3xl font-bold">Welcome back</h1>
-      <p className="auth-lead">Log in to see your exercises and patients.</p>
-      <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
-        {/* invalid fields show the styled hints below instead of the browser's popup */}
-        <label className="form-label" htmlFor="login-email">Email</label>
-        <input id="login-email" className="field" type="email" placeholder="name@example.com" autoComplete="email"
-          value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <p className="field-hint hint-empty">Enter the email you signed up with.</p>
-        <p className="field-hint hint-format">That email looks incomplete. Try something like name@example.com.</p>
-        <label className="form-label" htmlFor="login-password">Password</label>
-        <PasswordField id="login-password" placeholder="Your password" autoComplete="current-password"
-          value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <p className="field-hint hint-empty">Enter your password to continue.</p>
-        <Link className="link self-end text-sm" to="/forgot-password">Forgot password?</Link>
-        {error && <p role="alert" className="alert-error">{error}</p>}
-        <button className="btn-primary btn-lg mt-2 w-full" disabled={busy}>
-          {busy ? <><LoaderCircle aria-hidden className="animate-spin" /> Logging in…</> : 'Log in'}
-        </button>
-      </form>
-      <p className="mt-6 text-center text-sm text-muted">No account? <Link className="link" to="/register">Create one</Link></p>
-    </main>
-    <SiteFooter />
-    </>
+    <AuthLayout>
+      <main className="auth-card">
+        <h1 className="mb-7 text-3xl font-semibold">{t.logIn}</h1>
+        <form onSubmit={submit} onInvalidCapture={(e) => { e.preventDefault(); e.currentTarget.querySelector(':invalid')?.focus() }} className="stagger flex flex-col gap-3.5">
+          {/* invalid fields show the styled hints below instead of the browser's popup */}
+          <label className="form-label" htmlFor="login-email">{t.email}</label>
+          <input id="login-email" className="field" type="email" placeholder="name@example.com" autoComplete="email"
+            value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <p className="field-hint hint-empty">{t.hintLoginEmailEmpty}</p>
+          <p className="field-hint hint-format">{t.hintEmailFormat}</p>
+          <label className="form-label" htmlFor="login-password">{t.password}</label>
+          <PasswordField id="login-password" placeholder={t.passwordPlaceholder} autoComplete="current-password"
+            value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <p className="field-hint hint-empty">{t.hintLoginPasswordEmpty}</p>
+          <Link className="link self-end text-sm" to="/forgot-password">{t.forgotPassword}</Link>
+          {error && <p role="alert" className="alert-error">{tr(error)}</p>}
+          <button className="btn-primary btn-lg mt-2 w-full" disabled={busy}>
+            {busy ? <><LoaderCircle aria-hidden className="animate-spin" /> {t.loggingIn}</> : t.logIn}
+          </button>
+        </form>
+        <p className="mt-6 text-center text-sm text-muted">{t.noAccount} <Link className="link" to="/register">{t.createOne}</Link></p>
+      </main>
+    </AuthLayout>
   )
 }
 

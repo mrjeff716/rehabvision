@@ -73,17 +73,31 @@ function writeQueue(queue) {
 
 // Saves a finished session. If the server can't be reached (or has a
 // temporary problem), the session is kept on this device and sent later.
-// Returns true if saved now, false if queued.
+// Returns the saved session's id, or null if it was queued.
 export async function saveSession(userId, summary) {
   try {
-    await api("/sessions", { method: "POST", body: summary });
-    return true;
+    const data = await api("/sessions", { method: "POST", body: summary });
+    return data.session._id;
   } catch (e) {
     // 400 = the server says the data is invalid; retrying won't help
     if (e.status === 400) throw e;
     writeQueue([...readQueue(), { userId, summary }]);
-    return false;
+    return null;
   }
+}
+
+// Adds the pain score / incident note to a session saved by saveSession:
+// on the server if it was saved, else to the copy still queued on this device.
+export async function addSessionReport(userId, sessionId, report) {
+  if (sessionId) return api(`/sessions/${sessionId}/report`, { method: "PATCH", body: report });
+  const queue = readQueue();
+  for (let i = queue.length - 1; i >= 0; i--) {
+    if (queue[i].userId === userId) {
+      queue[i].summary = { ...queue[i].summary, ...report };
+      break;
+    }
+  }
+  writeQueue(queue);
 }
 
 // Tries to send this user's queued sessions. Others' sessions on a shared
@@ -112,4 +126,17 @@ async function doFlush(userId) {
   }
   writeQueue(keep);
   return sent;
+}
+
+// A private file (verification/aid document) as a Blob, sent with the login token
+export async function apiBlob(path) {
+  const token = getToken();
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  } catch {
+    throw new ApiError("Can't reach the server. Check your internet connection.", 0);
+  }
+  if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
+  return res.blob();
 }

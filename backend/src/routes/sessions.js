@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { Router } from 'express'
+import mongoose from 'mongoose'
 import Session from '../models/Session.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { isValidExerciseId, SIDES } from '../data/exercises.js'
@@ -18,12 +19,12 @@ const isAngle = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && 
 
 // POST /api/sessions
 // Body: { exerciseId, side, plan: {startAngle, targetAngle, permittedMin, permittedMax, reps},
-//         reps: [{ peakAngle, reachedTarget, t }], painScore?, performedAt? }
+//         reps: [{ peakAngle, reachedTarget, t }], painScore?, incident?, performedAt? }
 // The patient is taken from the login token, never from the body, so nobody
 // can save sessions for someone else.
 router.post('/', async (req, res, next) => {
   try {
-    const { exerciseId, side, plan, reps, painScore, performedAt } = req.body ?? {}
+    const { exerciseId, side, plan, reps, painScore, incident, performedAt } = req.body ?? {}
 
     if (!isValidExerciseId(exerciseId)) return res.status(400).json({ error: 'Unknown exercise' })
     if (!SIDES.includes(side)) return res.status(400).json({ error: 'side must be left or right' })
@@ -49,6 +50,9 @@ router.post('/', async (req, res, next) => {
     if (painScore !== undefined && painScore !== null &&
         (!Number.isInteger(painScore) || painScore < 0 || painScore > 10)) {
       return res.status(400).json({ error: 'painScore must be a whole number from 0 to 10' })
+    }
+    if (incident !== undefined && incident !== null && (typeof incident !== 'string' || incident.length > 500)) {
+      return res.status(400).json({ error: 'Invalid incident report' })
     }
 
     // Sessions saved offline are sent later, so keep the time they were really
@@ -80,9 +84,33 @@ router.post('/', async (req, res, next) => {
       totalReps: cleanReps.length,
       goodReps: cleanReps.filter((r) => r.reachedTarget).length,
       painScore: painScore ?? undefined,
+      incident: incident?.trim() || undefined,
       performedAt: when,
     })
     res.status(201).json({ session })
+  } catch (e) {
+    next(e)
+  }
+})
+
+// PATCH /api/sessions/:id/report { painScore, incident } — asked right after
+// the session is saved, so a session is never lost if the app is closed then
+router.patch('/:id/report', async (req, res, next) => {
+  try {
+    const { painScore, incident } = req.body ?? {}
+    if (painScore !== undefined && (!Number.isInteger(painScore) || painScore < 0 || painScore > 10)) {
+      return res.status(400).json({ error: 'painScore must be a whole number from 0 to 10' })
+    }
+    if (incident !== undefined && (typeof incident !== 'string' || incident.length > 500)) {
+      return res.status(400).json({ error: 'Invalid incident report' })
+    }
+    if (!mongoose.isObjectIdOrHexString(req.params.id)) return res.status(404).json({ error: 'Not found' })
+    const session = await Session.findOne({ _id: req.params.id, patient: req.user._id })
+    if (!session) return res.status(404).json({ error: 'Not found' })
+    if (painScore !== undefined) session.painScore = painScore
+    if (incident?.trim()) session.incident = incident.trim()
+    await session.save()
+    res.json({ ok: true })
   } catch (e) {
     next(e)
   }

@@ -37,3 +37,6 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      # Review team emails (verification, aid, payments), comma-separated
+      - key: ADMIN_EMAILS
+        sync: false
